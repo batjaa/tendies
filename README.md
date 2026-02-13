@@ -133,7 +133,7 @@ tendies
 tendies --month
 
 # one account
-tendies --year --account 23028791
+tendies --year --account <account_number_or_hash>
 
 # filter to symbols/underlyings
 tendies --month --symbol=NVDA,TSLA

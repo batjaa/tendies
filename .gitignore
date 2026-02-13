@@ -6,3 +6,6 @@
 
 # Claude Code
 .claude/
+
+# Local debug scratch
+.tmp/
