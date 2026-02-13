@@ -1,0 +1,47 @@
+project_name: tendies
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: tendies
+    main: ./cmd/tendies
+    binary: tendies
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+archives:
+  - id: tendies-archive
+    ids: [tendies]
+    formats: [tar.gz]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: git
+
+brews:
+  - name: tendies
+    repository:
+      owner: batjaa
+      name: homebrew-tools
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    folder: Formula
+    homepage: "https://github.com/batjaa/tendies"
+    description: "Realized Schwab P&L CLI"
+    install: |
+      bin.install "tendies"
+    test: |
+      output = shell_output("#{bin}/tendies --help")
+      assert_match "realized", output.downcase
