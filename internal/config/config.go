@@ -18,16 +18,22 @@ const (
 )
 
 type Config struct {
-	ClientID     string   `json:"client_id"`
-	ClientSecret string   `json:"client_secret"`
-	RedirectURL  string   `json:"redirect_url"`
-	Accounts     []string `json:"accounts,omitempty"` // Selected account hashes
-	Instruments  []string `json:"instruments,omitempty"`
-	RefreshMins  int      `json:"refresh_mins"`
+	ClientID         string                           `json:"client_id"`
+	ClientSecret     string                           `json:"client_secret"`
+	RedirectURL      string                           `json:"redirect_url"`
+	Accounts         []string                         `json:"accounts,omitempty"` // Selected account hashes
+	Instruments      []string                         `json:"instruments,omitempty"`
+	RefreshMins      int                              `json:"refresh_mins"`
+	DisplayNameCache map[string]DisplayNameCacheEntry `json:"display_name_cache,omitempty"`
 	// Internal Schwab web API (for realized gain/loss)
-	SchwabWebToken   string `json:"schwab_web_token,omitempty"`
-	SchwabAccountID  string `json:"schwab_account_id,omitempty"`
-	SchwabCookies    string `json:"schwab_cookies,omitempty"` // Full cookie string from browser
+	SchwabWebToken  string `json:"schwab_web_token,omitempty"`
+	SchwabAccountID string `json:"schwab_account_id,omitempty"`
+	SchwabCookies   string `json:"schwab_cookies,omitempty"` // Full cookie string from browser
+}
+
+type DisplayNameCacheEntry struct {
+	Name      string `json:"name"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type StoredToken struct {

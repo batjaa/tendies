@@ -155,6 +155,21 @@ func (c *Client) GetAccountRaw(ctx context.Context, accountHash string) ([]byte,
 	return io.ReadAll(resp.Body)
 }
 
+// GetAccountDetailsRaw retrieves raw account detail JSON for a specific account hash.
+func (c *Client) GetAccountDetailsRaw(ctx context.Context, accountHash string) ([]byte, error) {
+	reqURL := fmt.Sprintf("%s/accounts/%s", BaseURL, accountHash)
+	resp, err := c.httpClient.Get(reqURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account details: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	return io.ReadAll(resp.Body)
+}
+
 // GetTransactionsRaw retrieves raw JSON for debugging
 func (c *Client) GetTransactionsRaw(ctx context.Context, accountHash string, startDate, endDate time.Time, txnType string) ([]byte, error) {
 	params := url.Values{}
