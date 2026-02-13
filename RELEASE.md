@@ -42,3 +42,12 @@ brew install tendies
 ```bash
 go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean
 ```
+
+## Private Repository Note
+`batjaa/tendies` is currently private. For Homebrew installs from this tap, users need:
+
+```bash
+export HOMEBREW_GITHUB_API_TOKEN=<github_token_with_repo_scope>
+```
+
+If the repository becomes public later, formula `url` can be switched to public release/tarball URLs.
