@@ -70,6 +70,13 @@ type lot struct {
 	qtyRemain      float64
 }
 
+// TransactionFetcher abstracts the data source for account and transaction data.
+// Both schwab.Client and broker.Client implement this interface.
+type TransactionFetcher interface {
+	GetAccountNumbers(ctx context.Context) ([]AccountNumber, error)
+	GetTransactions(ctx context.Context, accountHash string, startDate, endDate time.Time, txnType string) ([]Transaction, error)
+}
+
 const (
 	historyChunkMonths = 6
 	maxHistoryMonths   = 36
@@ -82,7 +89,7 @@ const (
 // walks backwards in time until every in-range closing trade can be fully
 // matched against opening lots. This avoids partial matching caused by a
 // fixed lookback horizon.
-func (c *Client) CalculateRealizedPnL(ctx context.Context, accountHash string, fromDate, toDate time.Time) (*PnLSummary, error) {
+func CalculateRealizedPnL(ctx context.Context, ds TransactionFetcher, accountHash string, fromDate, toDate time.Time) (*PnLSummary, error) {
 	loc := fromDate.Location()
 	fromDay := time.Date(fromDate.Year(), fromDate.Month(), fromDate.Day(), 0, 0, 0, 0, loc)
 	toDay := time.Date(toDate.Year(), toDate.Month(), toDate.Day(), 0, 0, 0, 0, loc)
@@ -90,15 +97,12 @@ func (c *Client) CalculateRealizedPnL(ctx context.Context, accountHash string, f
 		toDay = toDay.AddDate(0, 0, 1)
 	}
 
-	// fetchAllTrades fetches both TRADE and RECEIVE_AND_DELIVER (option expirations)
-	// for the given date range. Expirations are closing trades with netAmount=0,
-	// and the realized loss is the premium paid on the opening trade.
 	fetchAllTrades := func(from, to time.Time) ([]Transaction, error) {
-		trades, err := c.GetTransactions(ctx, accountHash, from, to, "TRADE")
+		trades, err := ds.GetTransactions(ctx, accountHash, from, to, "TRADE")
 		if err != nil {
 			return nil, err
 		}
-		expirations, err := c.GetTransactions(ctx, accountHash, from, to, "RECEIVE_AND_DELIVER")
+		expirations, err := ds.GetTransactions(ctx, accountHash, from, to, "RECEIVE_AND_DELIVER")
 		if err == nil {
 			trades = append(trades, expirations...)
 		}
