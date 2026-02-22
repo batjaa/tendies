@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/batjaa/tendies/internal/broker"
 	"github.com/batjaa/tendies/internal/config"
 	"github.com/batjaa/tendies/internal/schwab"
 	"github.com/spf13/cobra"
@@ -50,6 +51,7 @@ type cliOptions struct {
 	refreshDetails bool
 	accountID      string
 	showCfg        bool
+	direct         bool
 }
 
 func main() {
@@ -70,12 +72,15 @@ func main() {
 	}
 	loginCmd := &cobra.Command{
 		Use:   "login",
-		Short: "Authenticate with Schwab and save OAuth token",
+		Short: "Authenticate and save OAuth token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
 			}
-			return runLogin()
+			if opts.direct {
+				return runDirectLogin()
+			}
+			return runBrokerLogin()
 		},
 	}
 	accountsCmd := &cobra.Command{
@@ -85,7 +90,7 @@ func main() {
 			if len(args) > 0 {
 				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
 			}
-			return runAccounts(opts.refreshDetails)
+			return runAccounts(opts)
 		},
 	}
 	rootCmd.AddCommand(loginCmd, accountsCmd)
@@ -99,6 +104,7 @@ func main() {
 	rootCmd.PersistentFlags().BoolVar(&opts.refreshDetails, "refresh-details", false, "Refresh cached account display details")
 	rootCmd.Flags().StringVar(&opts.accountID, "account", "", "Account hash or account number")
 	rootCmd.Flags().BoolVar(&opts.showCfg, "config", false, "Initialize/show configuration")
+	rootCmd.PersistentFlags().BoolVar(&opts.direct, "direct", false, "Use direct Schwab API (requires own Schwab app credentials)")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -144,37 +150,49 @@ func runPnL(opts *cliOptions) error {
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(cfg.ClientID) == "" || strings.TrimSpace(cfg.ClientSecret) == "" {
-		return errors.New("missing Schwab credentials in config; run tendies --config and set client_id/client_secret")
-	}
-	if strings.TrimSpace(cfg.RedirectURL) == "" {
-		return errors.New("missing redirect_url in config; run tendies --config")
-	}
-
-	token, err := config.LoadToken()
-	if err != nil {
-		return err
-	}
-	if token == nil {
-		return errors.New("no OAuth token in keychain; run `tendies login` first")
-	}
 
 	ctx := context.Background()
-	client := schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
 
-	if err := runWithSpinner("Refreshing OAuth token", func() error {
-		var refreshErr error
-		token, refreshErr = ensureFreshToken(ctx, client, token)
-		return refreshErr
-	}); err != nil {
-		return err
+	// Build data source: broker (default) or direct Schwab.
+	var ds schwab.TransactionFetcher
+	var client *schwab.Client // only set in direct mode (for display-name lookups)
+
+	if opts.direct {
+		if strings.TrimSpace(cfg.ClientID) == "" || strings.TrimSpace(cfg.ClientSecret) == "" {
+			return errors.New("missing Schwab credentials in config; run tendies --config and set client_id/client_secret")
+		}
+		if strings.TrimSpace(cfg.RedirectURL) == "" {
+			return errors.New("missing redirect_url in config; run tendies --config")
+		}
+		token, loadErr := config.LoadToken()
+		if loadErr != nil {
+			return loadErr
+		}
+		if token == nil {
+			return errors.New("no OAuth token in keychain; run `tendies login --direct` first")
+		}
+		client = schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
+		if err := runWithSpinner("Refreshing OAuth token", func() error {
+			var refreshErr error
+			token, refreshErr = ensureFreshToken(ctx, client, token)
+			return refreshErr
+		}); err != nil {
+			return err
+		}
+		client.SetToken(token)
+		ds = client
+	} else {
+		bc, bcErr := buildBrokerClient(cfg)
+		if bcErr != nil {
+			return bcErr
+		}
+		ds = bc
 	}
-	client.SetToken(token)
 
 	var accounts []schwab.AccountNumber
 	if err := runWithSpinner("Loading accounts", func() error {
 		var loadErr error
-		accounts, loadErr = client.GetAccountNumbers(ctx)
+		accounts, loadErr = ds.GetAccountNumbers(ctx)
 		return loadErr
 	}); err != nil {
 		return fmt.Errorf("failed to load accounts: %w", err)
@@ -182,11 +200,17 @@ func runPnL(opts *cliOptions) error {
 
 	displayByHash := make(map[string]string, len(accounts))
 	cacheUpdated := false
-	if err := runWithSpinner("Loading account display names", func() error {
-		displayByHash, cacheUpdated = resolveAccountDisplayNames(ctx, client, cfg, accounts, opts.refreshDetails)
-		return nil
-	}); err != nil {
-		return err
+	if client != nil {
+		if err := runWithSpinner("Loading account display names", func() error {
+			displayByHash, cacheUpdated = resolveAccountDisplayNames(ctx, client, cfg, accounts, opts.refreshDetails)
+			return nil
+		}); err != nil {
+			return err
+		}
+	} else {
+		for _, a := range accounts {
+			displayByHash[a.HashValue] = accountFallbackLabel(a.AccountNumber)
+		}
 	}
 	if cacheUpdated {
 		if err := cfg.Save(); err != nil {
@@ -225,7 +249,7 @@ func runPnL(opts *cliOptions) error {
 			label := fmt.Sprintf("Calculating %s P&L for %s", strings.ToLower(tf.Name), accountLabel)
 			if err := runWithSpinner(label, func() error {
 				var calcErr error
-				s, calcErr = client.CalculateRealizedPnL(ctx, accountHash, tf.From, tf.To)
+				s, calcErr = schwab.CalculateRealizedPnL(ctx, ds, accountHash, tf.From, tf.To)
 				return calcErr
 			}); err != nil {
 				return fmt.Errorf("failed to calculate %s P&L for %s: %w", strings.ToLower(tf.Name), accountLabel, err)
@@ -265,6 +289,31 @@ func runPnL(opts *cliOptions) error {
 		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
 	}
 	return nil
+}
+
+func buildBrokerClient(cfg *config.Config) (*broker.Client, error) {
+	brokerURL := cfg.BrokerURL
+	if brokerURL == "" {
+		return nil, errors.New("broker_url not set in config; run tendies --config or use --direct for direct Schwab API access")
+	}
+	clientID := cfg.BrokerClientID
+	if clientID == "" {
+		return nil, errors.New("broker_client_id not set in config")
+	}
+
+	bt, err := config.LoadBrokerToken()
+	if err != nil {
+		return nil, err
+	}
+	if bt == nil {
+		return nil, errors.New("no broker token in keychain; run `tendies login` first")
+	}
+
+	bc := broker.NewClient(brokerURL, clientID)
+	bc.AccessToken = bt.AccessToken
+	bc.RefreshToken = bt.RefreshToken
+	bc.TokenExpiry = bt.Expiry
+	return bc, nil
 }
 
 func printDebugClosedTrades(w io.Writer, timeframeName, accountLabel string, trades []schwab.ClosedTrade) {
@@ -360,7 +409,40 @@ func mapKeys(m map[string]struct{}) []string {
 	return keys
 }
 
-func runLogin() error {
+func runBrokerLogin() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	brokerURL := cfg.BrokerURL
+	if brokerURL == "" {
+		return errors.New("broker_url not set in config; run tendies --config or use --direct for direct Schwab API access")
+	}
+	clientID := cfg.BrokerClientID
+	if clientID == "" {
+		return errors.New("broker_client_id not set in config")
+	}
+
+	bc := broker.NewClient(brokerURL, clientID)
+	ctx := context.Background()
+
+	if err := bc.Login(ctx); err != nil {
+		return fmt.Errorf("broker login failed: %w", err)
+	}
+
+	if err := config.SaveBrokerToken(&config.BrokerToken{
+		AccessToken:  bc.AccessToken,
+		RefreshToken: bc.RefreshToken,
+		Expiry:       bc.TokenExpiry,
+	}); err != nil {
+		return err
+	}
+
+	fmt.Printf("Login complete. Token saved to keychain (expires: %s).\n", bc.TokenExpiry.Local().Format(time.RFC3339))
+	return nil
+}
+
+func runDirectLogin() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -412,48 +494,60 @@ func runLogin() error {
 	return nil
 }
 
-func runAccounts(refreshDetails bool) error {
+func runAccounts(opts *cliOptions) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(cfg.ClientID) == "" || strings.TrimSpace(cfg.ClientSecret) == "" {
-		return errors.New("missing Schwab credentials in config; run tendies --config and set client_id/client_secret")
-	}
-	if strings.TrimSpace(cfg.RedirectURL) == "" {
-		return errors.New("missing redirect_url in config; run tendies --config")
-	}
-
-	token, err := config.LoadToken()
-	if err != nil {
-		return err
-	}
-	if token == nil {
-		return errors.New("no OAuth token in keychain; run `tendies login` first")
-	}
 
 	ctx := context.Background()
-	client := schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
 
-	if err := runWithSpinner("Refreshing OAuth token", func() error {
-		var refreshErr error
-		token, refreshErr = ensureFreshToken(ctx, client, token)
-		return refreshErr
-	}); err != nil {
-		return err
+	// Build data source
+	var ds schwab.TransactionFetcher
+	var client *schwab.Client
+
+	if opts.direct {
+		if strings.TrimSpace(cfg.ClientID) == "" || strings.TrimSpace(cfg.ClientSecret) == "" {
+			return errors.New("missing Schwab credentials in config; run tendies --config and set client_id/client_secret")
+		}
+		if strings.TrimSpace(cfg.RedirectURL) == "" {
+			return errors.New("missing redirect_url in config; run tendies --config")
+		}
+		token, loadErr := config.LoadToken()
+		if loadErr != nil {
+			return loadErr
+		}
+		if token == nil {
+			return errors.New("no OAuth token in keychain; run `tendies login --direct` first")
+		}
+		client = schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
+		if err := runWithSpinner("Refreshing OAuth token", func() error {
+			var refreshErr error
+			token, refreshErr = ensureFreshToken(ctx, client, token)
+			return refreshErr
+		}); err != nil {
+			return err
+		}
+		client.SetToken(token)
+		ds = client
+	} else {
+		bc, bcErr := buildBrokerClient(cfg)
+		if bcErr != nil {
+			return bcErr
+		}
+		ds = bc
 	}
-	client.SetToken(token)
 
 	var accounts []schwab.AccountNumber
 	if err := runWithSpinner("Loading accounts", func() error {
 		var loadErr error
-		accounts, loadErr = client.GetAccountNumbers(ctx)
+		accounts, loadErr = ds.GetAccountNumbers(ctx)
 		return loadErr
 	}); err != nil {
 		return fmt.Errorf("failed to load accounts: %w", err)
 	}
 	if len(accounts) == 0 {
-		fmt.Println("No accounts returned by Schwab.")
+		fmt.Println("No accounts returned.")
 		return nil
 	}
 
@@ -479,11 +573,17 @@ func runAccounts(refreshDetails bool) error {
 
 	nameByHash := make(map[string]string, len(accounts))
 	cacheUpdated := false
-	if err := runWithSpinner("Loading account friendly names", func() error {
-		nameByHash, cacheUpdated = resolveAccountDisplayNames(ctx, client, cfg, accounts, refreshDetails)
-		return nil
-	}); err != nil {
-		return err
+	if client != nil {
+		if err := runWithSpinner("Loading account friendly names", func() error {
+			nameByHash, cacheUpdated = resolveAccountDisplayNames(ctx, client, cfg, accounts, opts.refreshDetails)
+			return nil
+		}); err != nil {
+			return err
+		}
+	} else {
+		for _, a := range accounts {
+			nameByHash[a.HashValue] = accountFallbackLabel(a.AccountNumber)
+		}
 	}
 	if cacheUpdated {
 		if err := cfg.Save(); err != nil {

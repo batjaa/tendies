@@ -21,14 +21,18 @@ type Config struct {
 	ClientID         string                           `json:"client_id"`
 	ClientSecret     string                           `json:"client_secret"`
 	RedirectURL      string                           `json:"redirect_url"`
-	Accounts         []string                         `json:"accounts,omitempty"` // Selected account hashes
+	Accounts         []string                         `json:"accounts,omitempty"`
 	Instruments      []string                         `json:"instruments,omitempty"`
 	RefreshMins      int                              `json:"refresh_mins"`
 	DisplayNameCache map[string]DisplayNameCacheEntry `json:"display_name_cache,omitempty"`
-	// Internal Schwab web API (for realized gain/loss)
-	SchwabWebToken  string `json:"schwab_web_token,omitempty"`
-	SchwabAccountID string `json:"schwab_account_id,omitempty"`
-	SchwabCookies   string `json:"schwab_cookies,omitempty"` // Full cookie string from browser
+	BrokerURL        string                           `json:"broker_url,omitempty"`
+	BrokerClientID   string                           `json:"broker_client_id,omitempty"`
+}
+
+type BrokerToken struct {
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	Expiry       time.Time `json:"expiry"`
 }
 
 type DisplayNameCacheEntry struct {
@@ -146,4 +150,32 @@ func LoadToken() (*oauth2.Token, error) {
 // DeleteToken removes the OAuth token from the keychain
 func DeleteToken() error {
 	return keyring.Delete(ServiceName, "oauth_token")
+}
+
+// SaveBrokerToken stores the broker (Passport) token in the system keychain
+func SaveBrokerToken(token *BrokerToken) error {
+	data, err := json.Marshal(token)
+	if err != nil {
+		return fmt.Errorf("failed to marshal broker token: %w", err)
+	}
+	if err := keyring.Set(ServiceName, "broker_token", string(data)); err != nil {
+		return fmt.Errorf("failed to save broker token to keychain: %w", err)
+	}
+	return nil
+}
+
+// LoadBrokerToken retrieves the broker (Passport) token from the system keychain
+func LoadBrokerToken() (*BrokerToken, error) {
+	data, err := keyring.Get(ServiceName, "broker_token")
+	if err != nil {
+		if err == keyring.ErrNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to load broker token from keychain: %w", err)
+	}
+	var token BrokerToken
+	if err := json.Unmarshal([]byte(data), &token); err != nil {
+		return nil, fmt.Errorf("failed to parse broker token: %w", err)
+	}
+	return &token, nil
 }
