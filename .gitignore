@@ -9,3 +9,10 @@
 
 # Local debug scratch
 .tmp/
+
+# Laravel backend
+backend/vendor/
+backend/.env
+backend/database/database.sqlite
+backend/storage/oauth-private.key
+backend/storage/oauth-public.key
