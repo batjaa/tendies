@@ -39,7 +39,7 @@ brews:
       owner: batjaa
       name: homebrew-tools
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    folder: Formula
+    directory: Formula
     homepage: "https://github.com/batjaa/tendies"
     description: "Realized Schwab P&L CLI"
     install: |
