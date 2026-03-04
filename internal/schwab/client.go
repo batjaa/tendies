@@ -3,6 +3,7 @@ package schwab
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,11 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+)
+
+const (
+	retryAttempts  = 3
+	retryBaseDelay = 1 * time.Second
 )
 
 const (
@@ -94,24 +100,65 @@ func (c *Client) RefreshToken(ctx context.Context, token *oauth2.Token) (*oauth2
 	return tokenSource.Token()
 }
 
+// doGet performs an authenticated GET with context propagation and retry with
+// exponential backoff for transient failures (5xx, network errors).
+func (c *Client) doGet(ctx context.Context, reqURL string) ([]byte, int, error) {
+	var lastErr error
+	for attempt := range retryAttempts {
+		req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			// Don't retry on context cancellation.
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return nil, 0, err
+			}
+			if attempt < retryAttempts-1 {
+				time.Sleep(retryBaseDelay * time.Duration(1<<attempt))
+				continue
+			}
+			return nil, 0, lastErr
+		}
+
+		body, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr != nil {
+			return nil, resp.StatusCode, readErr
+		}
+
+		// Retry on 5xx server errors.
+		if resp.StatusCode >= 500 {
+			lastErr = fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+			if attempt < retryAttempts-1 {
+				time.Sleep(retryBaseDelay * time.Duration(1<<attempt))
+				continue
+			}
+			return nil, resp.StatusCode, lastErr
+		}
+
+		return body, resp.StatusCode, nil
+	}
+	return nil, 0, lastErr
+}
+
 // GetAccountNumbers retrieves account numbers and their hash values
 func (c *Client) GetAccountNumbers(ctx context.Context) ([]AccountNumber, error) {
-	resp, err := c.httpClient.Get(BaseURL + "/accounts/accountNumbers")
+	body, status, err := c.doGet(ctx, BaseURL+"/accounts/accountNumbers")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get account numbers: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("API error %d: %s", status, string(body))
 	}
 
 	var accounts []AccountNumber
-	if err := json.NewDecoder(resp.Body).Decode(&accounts); err != nil {
+	if err := json.Unmarshal(body, &accounts); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-
 	return accounts, nil
 }
 
@@ -125,49 +172,42 @@ func (c *Client) GetTransactions(ctx context.Context, accountHash string, startD
 	}
 
 	reqURL := fmt.Sprintf("%s/accounts/%s/transactions?%s", BaseURL, accountHash, params.Encode())
-	resp, err := c.httpClient.Get(reqURL)
+	body, status, err := c.doGet(ctx, reqURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transactions: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("API error %d: %s", status, string(body))
 	}
 
 	var transactions []Transaction
-	if err := json.NewDecoder(resp.Body).Decode(&transactions); err != nil {
+	if err := json.Unmarshal(body, &transactions); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-
 	return transactions, nil
 }
 
 // GetAccountRaw retrieves raw account JSON with positions for debugging
 func (c *Client) GetAccountRaw(ctx context.Context, accountHash string) ([]byte, error) {
 	reqURL := fmt.Sprintf("%s/accounts/%s?fields=positions", BaseURL, accountHash)
-	resp, err := c.httpClient.Get(reqURL)
+	body, _, err := c.doGet(ctx, reqURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get account: %w", err)
 	}
-	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
+	return body, nil
 }
 
 // GetAccountDetailsRaw retrieves raw account detail JSON for a specific account hash.
 func (c *Client) GetAccountDetailsRaw(ctx context.Context, accountHash string) ([]byte, error) {
 	reqURL := fmt.Sprintf("%s/accounts/%s", BaseURL, accountHash)
-	resp, err := c.httpClient.Get(reqURL)
+	body, status, err := c.doGet(ctx, reqURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get account details: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("API error %d: %s", status, string(body))
 	}
-	return io.ReadAll(resp.Body)
+	return body, nil
 }
 
 // GetTransactionsRaw retrieves raw JSON for debugging
@@ -180,11 +220,9 @@ func (c *Client) GetTransactionsRaw(ctx context.Context, accountHash string, sta
 	}
 
 	reqURL := fmt.Sprintf("%s/accounts/%s/transactions?%s", BaseURL, accountHash, params.Encode())
-	resp, err := c.httpClient.Get(reqURL)
+	body, _, err := c.doGet(ctx, reqURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transactions: %w", err)
 	}
-	defer resp.Body.Close()
-
-	return io.ReadAll(resp.Body)
+	return body, nil
 }

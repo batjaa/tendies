@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	ServiceName = "tendies"
-	ConfigDir   = ".tendies"
-	ConfigFile  = "config.json"
+	ServiceName      = "tendies"
+	ConfigDir        = ".tendies"
+	ConfigFile       = "config.json"
+	DefaultBrokerURL = "https://tendies.batjaa.site"
 )
 
 type Config struct {
@@ -67,6 +68,7 @@ func Load() (*Config, error) {
 			return &Config{
 				RefreshMins: 1,
 				RedirectURL: "https://127.0.0.1:8443/callback",
+				BrokerURL:   DefaultBrokerURL,
 			}, nil
 		}
 		return nil, fmt.Errorf("failed to read config: %w", err)
@@ -75,6 +77,10 @@ func Load() (*Config, error) {
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	if cfg.BrokerURL == "" {
+		cfg.BrokerURL = DefaultBrokerURL
 	}
 
 	return &cfg, nil

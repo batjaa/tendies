@@ -71,17 +71,24 @@ func TestSelectAccounts(t *testing.T) {
 func TestParseOAuthInput(t *testing.T) {
 	t.Parallel()
 
-	code, state, err := parseOAuthInput("abc123")
-	if err != nil || code != "abc123" || state != "" {
-		t.Fatalf("unexpected plain code parse result: code=%q state=%q err=%v", code, state, err)
+	// Bare codes must be rejected (CSRF protection).
+	if _, _, err := parseOAuthInput("abc123"); err == nil {
+		t.Fatal("expected error for bare code input")
 	}
 
-	urlInput := "https://127.0.0.1:8443/callback?code=xyz&state=s123"
-	code, state, err = parseOAuthInput(urlInput)
+	// Full callback URL with code and state.
+	code, state, err := parseOAuthInput("https://127.0.0.1:8443/callback?code=xyz&state=s123")
 	if err != nil || code != "xyz" || state != "s123" {
 		t.Fatalf("unexpected URL parse result: code=%q state=%q err=%v", code, state, err)
 	}
 
+	// Callback URL without state — should parse with empty state.
+	code, state, err = parseOAuthInput("https://127.0.0.1:8443/callback?code=onlycode")
+	if err != nil || code != "onlycode" || state != "" {
+		t.Fatalf("unexpected no-state URL parse result: code=%q state=%q err=%v", code, state, err)
+	}
+
+	// Missing code in callback URL.
 	if _, _, err := parseOAuthInput("https://127.0.0.1:8443/callback?state=missing_code"); err == nil {
 		t.Fatal("expected error when callback URL has no code")
 	}

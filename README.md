@@ -8,7 +8,16 @@
 
 Tendies is a CLI that computes realized gains/losses from Schwab transactions using FIFO lot matching. It supports day, week, month, and year-to-date views, account selection, symbol filtering, and detailed debug output.
 
-## Getting Started
+Two modes:
+
+- **Broker mode** (default) — CLI authenticates via a hosted backend. No Schwab developer credentials needed.
+- **Direct mode** (`--direct`) — CLI talks to the Schwab API directly. Requires your own Schwab app.
+
+---
+
+## Broker Mode (Default)
+
+This is the simplest way to use Tendies. You don't need a Schwab developer account.
 
 ### Install
 
@@ -17,11 +26,58 @@ brew tap batjaa/tools
 brew install tendies
 ```
 
-Or build from source:
+### Configure
 
 ```bash
-go install github.com/batjaa/tendies/cmd/tendies@latest
+tendies --config
 ```
+
+Edit `~/.tendies/config.json` with the broker client ID you were given:
+
+```json
+{
+  "broker_client_id": "YOUR_BROKER_CLIENT_ID"
+}
+```
+
+> The broker URL defaults to `https://tendies.batjaa.site`. Override with `broker_url` in the config if needed.
+
+### Log in
+
+```bash
+tendies login
+```
+
+This opens your browser for OAuth login. After authorizing, you're redirected back and the token is saved to your macOS keychain.
+
+### Check your P&L
+
+```bash
+tendies                # all timeframes (day, week, month, year)
+tendies --day          # today only
+tendies --week         # this week
+tendies --month        # this month
+tendies --year         # year-to-date
+```
+
+Filter by symbol or account:
+
+```bash
+tendies --day --symbol=NVDA,TSLA
+tendies --account=HASH_OR_NUMBER
+```
+
+### List accounts
+
+```bash
+tendies accounts
+```
+
+---
+
+## Direct Mode
+
+Direct mode talks to the Schwab API without a broker backend. You need your own Schwab developer app credentials from [developer.schwab.com](https://developer.schwab.com).
 
 ### Configure
 
@@ -29,7 +85,7 @@ go install github.com/batjaa/tendies/cmd/tendies@latest
 tendies --config
 ```
 
-This creates `~/.tendies/config.json`. Edit it with your Schwab credentials (register at [developer.schwab.com](https://developer.schwab.com)):
+Edit `~/.tendies/config.json`:
 
 ```json
 {
@@ -45,30 +101,19 @@ This creates `~/.tendies/config.json`. Edit it with your Schwab credentials (reg
 tendies login --direct
 ```
 
-This prints a URL to open in your browser. After authorizing with Schwab, paste the callback URL back into the terminal. The token is saved to your macOS keychain.
+This prints a URL to open in your browser. After authorizing with Schwab, paste the full callback URL back into the terminal. The token is saved to your macOS keychain.
 
 > Schwab refresh tokens expire after 7 days. Re-run `tendies login --direct` when they expire.
 
-### Check your P&L
+### Usage
+
+All commands accept the `--direct` flag:
 
 ```bash
 tendies --direct              # all timeframes
 tendies --direct --day        # today only
-tendies --direct --week       # this week
-tendies --direct --month      # this month
-tendies --direct --year       # year-to-date
-```
-
-Filter by symbol or account:
-
-```bash
-tendies --direct --day --symbol=NVDA,TSLA
+tendies --direct --symbol=HD
 tendies --direct --account=HASH_OR_NUMBER
-```
-
-### List accounts
-
-```bash
 tendies accounts --direct
 tendies accounts --direct --refresh-details   # force refresh cached names
 ```
@@ -80,9 +125,9 @@ tendies accounts --direct --refresh-details   # force refresh cached names
 | Command | Description |
 |---|---|
 | `tendies` | Calculate and print realized P&L |
-| `tendies login` | Authenticate with Schwab via OAuth |
+| `tendies login` | Authenticate via OAuth |
 | `tendies accounts` | List accounts (number/hash/name/selected) |
-| `tendies completion` | Generate shell completion scripts |
+| `tendies version` | Print version |
 
 | Flag | Scope | Description |
 |------|-------|-------------|
@@ -112,7 +157,7 @@ tendies accounts --direct --refresh-details   # force refresh cached names
 
 ---
 
-## Development
+## Local Development
 
 ### Architecture
 
@@ -120,31 +165,42 @@ tendies accounts --direct --refresh-details   # force refresh cached names
 tendies/
 ├── cmd/tendies/         # CLI entry point (Cobra)
 ├── internal/
-│   ├── broker/          # Broker API client (talks to Laravel backend)
-│   ├── schwab/          # Direct Schwab API client + P&L engine
-│   └── config/          # CLI config + keychain token storage
-├── backend/             # Laravel API (Passport OAuth + Schwab proxy)
-└── .goreleaser.yaml     # Release automation
+│   ├── broker/          # Broker API client (OAuth PKCE + REST)
+│   ├── schwab/          # Direct Schwab API client + FIFO P&L engine
+│   └── config/          # Config file + macOS keychain token storage
+├── backend/             # Laravel backend (Passport OAuth + Schwab proxy)
+├── Makefile             # Local build with version injection
+└── .goreleaser.yaml     # Release automation (cross-platform + Homebrew)
 ```
 
-The CLI has two modes:
+### Prerequisites
 
-- **Broker mode** (default) — CLI authenticates via the Laravel backend, which proxies Schwab API calls. Users don't need their own Schwab developer credentials.
-- **Direct mode** (`--direct`) — CLI talks to Schwab API directly. Requires your own Schwab app credentials.
+- Go 1.25.7+
+- PHP 8.2+ and Composer (for backend)
+- A Schwab developer app at [developer.schwab.com](https://developer.schwab.com)
 
-### Backend Setup (Broker Mode)
+### Build the CLI
 
-The backend is only needed for broker mode. Direct mode users can skip this.
+```bash
+make build      # ./tendies binary with version from git tag
+make install    # install to $GOPATH/bin
+make test       # go test ./...
+```
+
+### Backend Setup
+
+The Laravel backend acts as an OAuth proxy between the CLI and the Schwab API.
 
 ```bash
 cd backend
 composer install
 cp .env.example .env
+php artisan key:generate
 ```
 
 Edit `backend/.env` with your Schwab credentials:
 
-```
+```env
 SCHWAB_CLIENT_ID=your-schwab-client-id
 SCHWAB_CLIENT_SECRET=your-schwab-client-secret
 SCHWAB_REDIRECT_URI=http://localhost:8000/auth/schwab/callback
@@ -157,7 +213,7 @@ php artisan migrate
 php artisan passport:client --public --name="tendies-cli"
 ```
 
-Note the **Client ID** — you'll need it for the CLI config.
+Note the **Client ID** output — you'll need it for the CLI config.
 
 Start the server:
 
@@ -165,7 +221,13 @@ Start the server:
 php artisan serve   # http://localhost:8000
 ```
 
-Configure the CLI for broker mode in `~/.tendies/config.json`:
+### Wire CLI to Local Backend
+
+```bash
+tendies --config
+```
+
+Edit `~/.tendies/config.json` (override the default broker URL to point at your local server):
 
 ```json
 {
@@ -174,19 +236,25 @@ Configure the CLI for broker mode in `~/.tendies/config.json`:
 }
 ```
 
-Then log in (without `--direct`):
+### E2E Flow
 
-```bash
-tendies login
-```
+1. Start the backend: `cd backend && php artisan serve`
+2. Log in: `tendies login` — opens browser, completes OAuth, saves token to keychain
+3. Fetch P&L: `tendies --day`
 
-#### Backend API Routes
+For direct mode (no backend needed):
+
+1. Configure Schwab credentials in `~/.tendies/config.json`
+2. Log in: `tendies login --direct` — paste callback URL
+3. Fetch P&L: `tendies --direct --day`
+
+### Backend API Routes
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/api/health` | No | Health check |
 | GET | `/api/v1/accounts` | Passport | List Schwab accounts |
-| GET | `/api/v1/transactions` | Passport | Get transactions |
+| GET | `/api/v1/transactions` | Passport | Get transactions (cached) |
 | GET | `/oauth/authorize` | Session | Passport authorization |
 | POST | `/oauth/token` | No | Exchange auth code for tokens |
 
@@ -201,22 +269,35 @@ go vet ./...
 cd backend && php artisan test
 ```
 
-### Troubleshooting
+### Release
+
+See [RELEASE.md](RELEASE.md) for the full release process. Short version:
+
+```bash
+git tag v0.1.0
+git push origin main v0.1.0
+```
+
+GitHub Actions runs GoReleaser to build cross-platform binaries and update the Homebrew tap.
+
+---
+
+## Troubleshooting
+
+**"broker_client_id not set in config"**
+Set `broker_client_id` in `~/.tendies/config.json`, or use `--direct` for direct Schwab API access.
 
 **"missing Schwab credentials in config"**
-Set `client_id` and `client_secret` in `~/.tendies/config.json`.
+Set `client_id` and `client_secret` in `~/.tendies/config.json` (direct mode only).
 
-**"broker_url not set in config"**
-Set `broker_url` in `~/.tendies/config.json` (broker mode only).
-
-**"no broker token in keychain"**
-Run `tendies login` first.
+**"no broker token in keychain"** / **"no OAuth token in keychain"**
+Run `tendies login` (broker) or `tendies login --direct` (direct mode).
 
 **OAuth state mismatch**
-Retry the login — caused by browser back/forward during auth or expired session.
+Retry the login — caused by browser back/forward during auth or an expired session.
 
 **Keychain permission errors (macOS)**
 Grant access when prompted, or check System Settings > Privacy & Security.
 
 **Schwab token refresh failed**
-Schwab refresh tokens expire after 7 days. Re-run `tendies login`.
+Schwab refresh tokens expire after 7 days. Re-run `tendies login` or `tendies login --direct`.

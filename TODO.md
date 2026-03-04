@@ -7,13 +7,14 @@ This file tracks remaining security hardening items before/after publish.
 - Debug mode: keep enabled; users operate at their own risk when using `--debug`.
 
 ## Remaining Items
-1. OAuth state hardening in login flow
-- Require callback URL input containing both `code` and `state`.
-- Reject bare `code` input to enforce CSRF/state validation.
+1. ~~OAuth state hardening in login flow~~ ✅
+- ~~Require callback URL input containing both `code` and `state`.~~
+- ~~Reject bare `code` input to enforce CSRF/state validation.~~
 
-2. Networking hardening for Schwab client calls
-- Use `http.NewRequestWithContext` for all API requests.
-- Add explicit client/request timeouts and retry/backoff strategy for transient failures.
+2. ~~Networking hardening for Schwab and broker client calls~~ ✅
+- ~~Use `http.NewRequestWithContext` for all API requests (Schwab + broker).~~
+- ~~Add retry with exponential backoff for transient failures (5xx, network errors).~~
+- ~~Thread `context.Context` through broker client call chain.~~
 
 3. Release hygiene and repo safety
 - Ensure temporary debug/probe scripts are excluded from release artifacts.

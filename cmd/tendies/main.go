@@ -296,7 +296,7 @@ func runPnL(opts *cliOptions) error {
 	}
 
 	printSummary(results, selectedLabels, time.Now().Location())
-	if len(symbolFilter) > 0 {
+	if len(symbolFilter) > 0 || opts.showDay || opts.showWeek {
 		printTrades(results)
 	}
 	for _, w := range uniqueStrings(warnings) {
@@ -306,13 +306,9 @@ func runPnL(opts *cliOptions) error {
 }
 
 func buildBrokerClient(cfg *config.Config) (*broker.Client, error) {
-	brokerURL := cfg.BrokerURL
-	if brokerURL == "" {
-		return nil, errors.New("broker_url not set in config; run tendies --config or use --direct for direct Schwab API access")
-	}
 	clientID := cfg.BrokerClientID
 	if clientID == "" {
-		return nil, errors.New("broker_client_id not set in config")
+		return nil, errors.New("broker_client_id not set in config; run tendies --config or use --direct for direct Schwab API access")
 	}
 
 	bt, err := config.LoadBrokerToken()
@@ -323,7 +319,7 @@ func buildBrokerClient(cfg *config.Config) (*broker.Client, error) {
 		return nil, errors.New("no broker token in keychain; run `tendies login` first")
 	}
 
-	bc := broker.NewClient(brokerURL, clientID)
+	bc := broker.NewClient(cfg.BrokerURL, clientID)
 	bc.AccessToken = bt.AccessToken
 	bc.RefreshToken = bt.RefreshToken
 	bc.TokenExpiry = bt.Expiry
@@ -428,16 +424,12 @@ func runBrokerLogin() error {
 	if err != nil {
 		return err
 	}
-	brokerURL := cfg.BrokerURL
-	if brokerURL == "" {
-		return errors.New("broker_url not set in config; run tendies --config or use --direct for direct Schwab API access")
-	}
 	clientID := cfg.BrokerClientID
 	if clientID == "" {
-		return errors.New("broker_client_id not set in config")
+		return errors.New("broker_client_id not set in config; run tendies --config or use --direct for direct Schwab API access")
 	}
 
-	bc := broker.NewClient(brokerURL, clientID)
+	bc := broker.NewClient(cfg.BrokerURL, clientID)
 	ctx := context.Background()
 
 	if err := bc.Login(ctx); err != nil {
@@ -478,7 +470,7 @@ func runDirectLogin() error {
 	fmt.Println("Open this URL in your browser and authorize access:")
 	fmt.Println(authURL)
 	fmt.Println()
-	fmt.Print("Paste the redirect URL (or just the `code` value): ")
+	fmt.Print("Paste the redirect URL: ")
 
 	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -492,8 +484,8 @@ func runDirectLogin() error {
 	if err != nil {
 		return err
 	}
-	if returnedState != "" && returnedState != state {
-		return errors.New("state mismatch in callback URL")
+	if returnedState != state {
+		return errors.New("state mismatch in callback URL (possible CSRF — retry login)")
 	}
 
 	token, err := client.ExchangeCode(context.Background(), code)
@@ -832,10 +824,8 @@ func parseOAuthInput(input string) (code string, state string, err error) {
 	if input == "" {
 		return "", "", errors.New("no authorization input provided")
 	}
-	if !strings.Contains(input, "=") {
-		return input, "", nil
-	}
 
+	// Parse query from various input formats — bare codes are rejected.
 	query := input
 	switch {
 	case strings.Contains(input, "://"):
@@ -848,6 +838,8 @@ func parseOAuthInput(input string) (code string, state string, err error) {
 		query = strings.TrimPrefix(input, "?")
 	case strings.Contains(input, "?"):
 		query = strings.SplitN(input, "?", 2)[1]
+	default:
+		return "", "", errors.New("paste the full callback URL (bare codes are not accepted)")
 	}
 
 	values, parseErr := url.ParseQuery(query)
@@ -856,7 +848,7 @@ func parseOAuthInput(input string) (code string, state string, err error) {
 	}
 	code = values.Get("code")
 	if code == "" {
-		return "", "", errors.New("missing `code` in callback input")
+		return "", "", errors.New("missing `code` in callback URL")
 	}
 	return code, values.Get("state"), nil
 }

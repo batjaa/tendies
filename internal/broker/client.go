@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -18,6 +19,11 @@ import (
 	"time"
 
 	"github.com/batjaa/tendies/internal/schwab"
+)
+
+const (
+	retryAttempts  = 3
+	retryBaseDelay = 1 * time.Second
 )
 
 // Client talks to the tendies broker backend and implements datasource.DataSource.
@@ -140,7 +146,7 @@ func (c *Client) Login(ctx context.Context) error {
 	}
 
 	// Exchange code for tokens.
-	tokenData, err := c.exchangeCode(code, verifier, redirectURI)
+	tokenData, err := c.exchangeCode(ctx, code, verifier, redirectURI)
 	if err != nil {
 		return fmt.Errorf("token exchange failed: %w", err)
 	}
@@ -152,7 +158,7 @@ func (c *Client) Login(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) exchangeCode(code, verifier, redirectURI string) (*tokenResponse, error) {
+func (c *Client) exchangeCode(ctx context.Context, code, verifier, redirectURI string) (*tokenResponse, error) {
 	data := url.Values{
 		"grant_type":    {"authorization_code"},
 		"client_id":     {c.ClientID},
@@ -161,7 +167,13 @@ func (c *Client) exchangeCode(code, verifier, redirectURI string) (*tokenRespons
 		"code_verifier": {verifier},
 	}
 
-	resp, err := c.httpClient.PostForm(c.BrokerURL+"/oauth/token", data)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.BrokerURL+"/oauth/token", strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -180,14 +192,20 @@ func (c *Client) exchangeCode(code, verifier, redirectURI string) (*tokenRespons
 }
 
 // RefreshAccessToken refreshes the Passport access token.
-func (c *Client) RefreshAccessToken() error {
+func (c *Client) RefreshAccessToken(ctx context.Context) error {
 	data := url.Values{
 		"grant_type":    {"refresh_token"},
 		"client_id":     {c.ClientID},
 		"refresh_token": {c.RefreshToken},
 	}
 
-	resp, err := c.httpClient.PostForm(c.BrokerURL+"/oauth/token", data)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.BrokerURL+"/oauth/token", strings.NewReader(data.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -211,15 +229,15 @@ func (c *Client) RefreshAccessToken() error {
 	return nil
 }
 
-func (c *Client) ensureValidToken() error {
+func (c *Client) ensureValidToken(ctx context.Context) error {
 	if time.Now().Before(c.TokenExpiry.Add(-30 * time.Second)) {
 		return nil
 	}
-	return c.RefreshAccessToken()
+	return c.RefreshAccessToken(ctx)
 }
 
-func (c *Client) doGet(path string, query url.Values) ([]byte, error) {
-	if err := c.ensureValidToken(); err != nil {
+func (c *Client) doGet(ctx context.Context, path string, query url.Values) ([]byte, error) {
+	if err := c.ensureValidToken(ctx); err != nil {
 		return nil, err
 	}
 
@@ -228,48 +246,71 @@ func (c *Client) doGet(path string, query url.Values) ([]byte, error) {
 		reqURL += "?" + query.Encode()
 	}
 
-	req, err := http.NewRequest("GET", reqURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		var errResp struct {
-			Error   string `json:"error"`
-			Message string `json:"message"`
+	var lastErr error
+	for attempt := range retryAttempts {
+		req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+		if err != nil {
+			return nil, err
 		}
-		if json.Unmarshal(body, &errResp) == nil && errResp.Message != "" {
-			return nil, fmt.Errorf("%s", errResp.Message)
-		}
-		return nil, fmt.Errorf("schwab session expired; run `tendies login` to re-authenticate")
-	}
+		req.Header.Set("Authorization", "Bearer "+c.AccessToken)
+		req.Header.Set("Accept", "application/json")
 
-	if resp.StatusCode != http.StatusOK {
-		msg := string(body)
-		if len(msg) > 200 {
-			msg = msg[:200] + "..."
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return nil, err
+			}
+			if attempt < retryAttempts-1 {
+				time.Sleep(retryBaseDelay * time.Duration(1<<attempt))
+				continue
+			}
+			return nil, lastErr
 		}
-		return nil, fmt.Errorf("broker API error %d: %s", resp.StatusCode, msg)
+
+		body, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		// Retry on 5xx server errors.
+		if resp.StatusCode >= 500 {
+			lastErr = fmt.Errorf("broker API error %d: %s", resp.StatusCode, string(body))
+			if attempt < retryAttempts-1 {
+				time.Sleep(retryBaseDelay * time.Duration(1<<attempt))
+				continue
+			}
+			return nil, lastErr
+		}
+
+		// Don't retry 4xx.
+		if resp.StatusCode == http.StatusUnauthorized {
+			var errResp struct {
+				Error   string `json:"error"`
+				Message string `json:"message"`
+			}
+			if json.Unmarshal(body, &errResp) == nil && errResp.Message != "" {
+				return nil, fmt.Errorf("%s", errResp.Message)
+			}
+			return nil, fmt.Errorf("schwab session expired; run `tendies login` to re-authenticate")
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			msg := string(body)
+			if len(msg) > 200 {
+				msg = msg[:200] + "..."
+			}
+			return nil, fmt.Errorf("broker API error %d: %s", resp.StatusCode, msg)
+		}
+		return body, nil
 	}
-	return body, nil
+	return nil, lastErr
 }
 
 // GetAccountNumbers implements datasource.DataSource.
 func (c *Client) GetAccountNumbers(ctx context.Context) ([]schwab.AccountNumber, error) {
-	body, err := c.doGet("/api/v1/accounts", nil)
+	body, err := c.doGet(ctx, "/api/v1/accounts", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get accounts from broker: %w", err)
 	}
@@ -292,7 +333,7 @@ func (c *Client) GetTransactions(ctx context.Context, accountHash string, startD
 		query.Set("types", txnType)
 	}
 
-	body, err := c.doGet("/api/v1/transactions", query)
+	body, err := c.doGet(ctx, "/api/v1/transactions", query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transactions from broker: %w", err)
 	}
