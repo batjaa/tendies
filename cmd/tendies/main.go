@@ -279,6 +279,7 @@ func runPnL(opts *cliOptions) error {
 			total.TotalLoss += s.TotalLoss
 			total.NetGain += s.NetGain
 			total.TradeCount += s.TradeCount
+			total.Trades = append(total.Trades, s.Trades...)
 			total.Warnings = append(total.Warnings, s.Warnings...)
 		}
 		results = append(results, timeframeResult{Label: tf.Name, Summary: total})
@@ -295,6 +296,9 @@ func runPnL(opts *cliOptions) error {
 	}
 
 	printSummary(results, selectedLabels, time.Now().Location())
+	if len(symbolFilter) > 0 {
+		printTrades(results)
+	}
 	for _, w := range uniqueStrings(warnings) {
 		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
 	}
@@ -1001,6 +1005,68 @@ func printSummary(results []timeframeResult, accounts []string, loc *time.Locati
 			net,
 			r.Summary.TradeCount,
 		)
+	}
+}
+
+func printTrades(results []timeframeResult) {
+	for _, r := range results {
+		trades := r.Summary.Trades
+		if len(trades) == 0 {
+			continue
+		}
+
+		sort.Slice(trades, func(i, j int) bool {
+			return trades[i].CloseTime.Before(trades[j].CloseTime)
+		})
+
+		fmt.Println()
+		if len(results) > 1 {
+			fmt.Printf("%s trades:\n", r.Label)
+		} else {
+			fmt.Println("Trades:")
+		}
+		fmt.Printf("  %-17s %-30s %8s %12s %8s\n", "Time", "Symbol", "Qty", "P&L", "Hold")
+		fmt.Printf("  %s\n", strings.Repeat("-", 79))
+
+		for _, t := range trades {
+			hold := holdDuration(t)
+			pnl := colorizeMoney(t.RealizedPnL)
+			fmt.Printf("  %-17s %-30s %8.0f %12s %8s\n",
+				t.CloseTime.Local().Format("Jan 02 15:04"),
+				truncate(t.Symbol, 30),
+				t.Quantity,
+				pnl,
+				hold,
+			)
+		}
+	}
+}
+
+func holdDuration(t schwab.ClosedTrade) string {
+	if len(t.MatchedOpenings) == 0 {
+		return "-"
+	}
+	// Use the earliest opening time for hold duration.
+	earliest := t.MatchedOpenings[0].OpenTime
+	for _, m := range t.MatchedOpenings[1:] {
+		if m.OpenTime.Before(earliest) {
+			earliest = m.OpenTime
+		}
+	}
+	d := t.CloseTime.Sub(earliest)
+	if d < 0 {
+		return "-"
+	}
+	days := int(d.Hours()) / 24
+	hours := int(d.Hours()) % 24
+	mins := int(d.Minutes()) % 60
+	switch {
+	case days > 0:
+		return fmt.Sprintf("%dd%dh", days, hours)
+	case hours > 0:
+		return fmt.Sprintf("%dh%dm", hours, mins)
+	default:
+		return fmt.Sprintf("%dm", mins)
 	}
 }
 
