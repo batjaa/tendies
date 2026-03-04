@@ -68,6 +68,91 @@ func TestSelectAccounts(t *testing.T) {
 	}
 }
 
+func TestInsertCommas(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in, want string
+	}{
+		{"0", "0"},
+		{"12", "12"},
+		{"123", "123"},
+		{"1234", "1,234"},
+		{"12345", "12,345"},
+		{"123456", "123,456"},
+		{"1234567", "1,234,567"},
+		{"10000000", "10,000,000"},
+	}
+	for _, tc := range tests {
+		if got := insertCommas(tc.in); got != tc.want {
+			t.Errorf("insertCommas(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestFormatMoney(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in   float64
+		want string
+	}{
+		{0, "$0.00"},
+		{1500, "$1,500.00"},
+		{-265.44, "-$265.44"},
+		{1234567.89, "$1,234,567.89"},
+		{0.50, "$0.50"},
+	}
+	for _, tc := range tests {
+		if got := formatMoney(tc.in); got != tc.want {
+			t.Errorf("formatMoney(%v) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestFormatSignedMoney(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		in   float64
+		want string
+	}{
+		{0, "$0.00"},
+		{1500, "+$1,500.00"},
+		{-265.44, "-$265.44"},
+	}
+	for _, tc := range tests {
+		if got := formatSignedMoney(tc.in); got != tc.want {
+			t.Errorf("formatSignedMoney(%v) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestColorPadLeft(t *testing.T) {
+	t.Parallel()
+
+	// No color: plain padding.
+	got := colorPadLeft("$50.00", 14, "")
+	want := "        " + "" + "$50.00" + colorReset
+	if got != want {
+		t.Errorf("colorPadLeft no-color:\n got %q\nwant %q", got, want)
+	}
+
+	// With color: padding outside, color wrapping text.
+	got = colorPadLeft("$50.00", 14, colorGreen)
+	want = "        " + colorGreen + "$50.00" + colorReset
+	if got != want {
+		t.Errorf("colorPadLeft green:\n got %q\nwant %q", got, want)
+	}
+
+	// Text wider than width: no padding, still colored.
+	got = colorPadLeft("$1,234,567.89", 10, colorRed)
+	want = colorRed + "$1,234,567.89" + colorReset
+	if got != want {
+		t.Errorf("colorPadLeft overflow:\n got %q\nwant %q", got, want)
+	}
+}
+
 func TestParseOAuthInput(t *testing.T) {
 	t.Parallel()
 

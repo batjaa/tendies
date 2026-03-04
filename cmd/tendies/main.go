@@ -30,6 +30,8 @@ const (
 	colorReset          = "\033[0m"
 	colorRed            = "\033[31m"
 	colorGreen          = "\033[32m"
+	colorDim            = "\033[2m"
+	colorBold           = "\033[1m"
 	displayNameCacheTTL = 7 * 24 * time.Hour
 )
 
@@ -574,8 +576,8 @@ func runAccounts(opts *cliOptions) error {
 	}
 
 	fmt.Println("Available accounts:")
-	fmt.Printf("%-10s %-40s %-24s %-8s\n", "Number", "Hash", "Name", "Selected")
-	fmt.Println(strings.Repeat("-", 87))
+	fmt.Printf("%s%-10s %-40s %-24s %-8s%s\n", colorDim, "Number", "Hash", "Name", "Selected", colorReset)
+	fmt.Printf("%s%s%s\n", colorDim, strings.Repeat("─", 87), colorReset)
 
 	nameByHash := make(map[string]string, len(accounts))
 	cacheUpdated := false
@@ -633,14 +635,14 @@ func startSpinner(label string) *spinner {
 }
 
 func (s *spinner) loop() {
-	frames := []string{"|", "/", "-", "\\"}
+	frames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	i := 0
 	for {
 		select {
 		case <-s.done:
 			return
 		case <-s.ticker.C:
-			fmt.Fprintf(os.Stderr, "\r%s %s", frames[i%len(frames)], s.label)
+			fmt.Fprintf(os.Stderr, "\r%s%s%s %s", colorDim, frames[i%len(frames)], colorReset, s.label)
 			i++
 		}
 	}
@@ -650,9 +652,9 @@ func (s *spinner) stop(ok bool) {
 	s.once.Do(func() {
 		close(s.done)
 		s.ticker.Stop()
-		status := "done"
+		status := colorGreen + "done" + colorReset
 		if !ok {
-			status = "failed"
+			status = colorRed + "failed" + colorReset
 		}
 		fmt.Fprintf(os.Stderr, "\r%s... %s\n", s.label, status)
 	})
@@ -979,21 +981,28 @@ func selectAccounts(accounts []schwab.AccountNumber, configAccounts []string, ov
 }
 
 func printSummary(results []timeframeResult, accounts []string, loc *time.Location) {
-	fmt.Printf("Tendies Realized P&L (%s)\n", time.Now().In(loc).Format("2006-01-02 15:04:05 MST"))
+	fmt.Printf("%sTendies Realized P&L (%s)%s\n", colorDim, time.Now().In(loc).Format("2006-01-02 15:04:05 MST"), colorReset)
 	if len(accounts) == 1 {
-		fmt.Printf("Account: %s\n", accounts[0])
+		fmt.Printf("%sAccount: %s%s\n", colorDim, accounts[0], colorReset)
 	} else {
-		fmt.Printf("Accounts: %s\n", strings.Join(accounts, ", "))
+		fmt.Printf("%sAccounts: %s%s\n", colorDim, strings.Join(accounts, ", "), colorReset)
 	}
 	fmt.Println()
-	fmt.Printf("%-8s %14s %14s %14s %8s\n", "Period", "Gains", "Losses", "Net", "Trades")
-	fmt.Println(strings.Repeat("-", 66))
+	fmt.Printf("%s%-8s %14s %14s %14s %8s%s\n", colorDim, "Period", "Gains", "Losses", "Net", "Trades", colorReset)
+	fmt.Printf("%s%s%s\n", colorDim, strings.Repeat("─", 66), colorReset)
 	for _, r := range results {
-		net := colorizeMoney(r.Summary.NetGain)
-		fmt.Printf("%-8s %14s %14s %14s %8d\n",
+		gains := colorPadLeft(formatMoney(r.Summary.TotalGain), 14, colorGreen)
+		losses := colorPadLeft(formatMoney(r.Summary.TotalLoss), 14, colorRed)
+		net := colorPadLeft(formatSignedMoney(r.Summary.NetGain), 14, "")
+		if r.Summary.NetGain > 0 {
+			net = colorPadLeft(formatSignedMoney(r.Summary.NetGain), 14, colorGreen)
+		} else if r.Summary.NetGain < 0 {
+			net = colorPadLeft(formatSignedMoney(r.Summary.NetGain), 14, colorRed)
+		}
+		fmt.Printf("%-8s %s %s %s %8d\n",
 			r.Label,
-			formatMoney(r.Summary.TotalGain),
-			formatMoney(r.Summary.TotalLoss),
+			gains,
+			losses,
 			net,
 			r.Summary.TradeCount,
 		)
@@ -1017,13 +1026,18 @@ func printTrades(results []timeframeResult) {
 		} else {
 			fmt.Println("Trades:")
 		}
-		fmt.Printf("  %-17s %-30s %8s %12s %8s\n", "Time", "Symbol", "Qty", "P&L", "Hold")
-		fmt.Printf("  %s\n", strings.Repeat("-", 79))
+		fmt.Printf("  %s%-17s %-30s %8s %12s %8s%s\n", colorDim, "Time", "Symbol", "Qty", "P&L", "Hold", colorReset)
+		fmt.Printf("  %s%s%s\n", colorDim, strings.Repeat("─", 79), colorReset)
 
 		for _, t := range trades {
 			hold := holdDuration(t)
-			pnl := colorizeMoney(t.RealizedPnL)
-			fmt.Printf("  %-17s %-30s %8.0f %12s %8s\n",
+			pnl := colorPadLeft(formatSignedMoney(t.RealizedPnL), 12, "")
+			if t.RealizedPnL > 0 {
+				pnl = colorPadLeft(formatSignedMoney(t.RealizedPnL), 12, colorGreen)
+			} else if t.RealizedPnL < 0 {
+				pnl = colorPadLeft(formatSignedMoney(t.RealizedPnL), 12, colorRed)
+			}
+			fmt.Printf("  %-17s %-30s %8.0f %s %8s\n",
 				t.CloseTime.Local().Format("Jan 02 15:04"),
 				truncate(t.Symbol, 30),
 				t.Quantity,
@@ -1062,24 +1076,65 @@ func holdDuration(t schwab.ClosedTrade) string {
 	}
 }
 
+// insertCommas inserts thousand-separator commas into an integer string.
+func insertCommas(s string) string {
+	n := len(s)
+	if n <= 3 {
+		return s
+	}
+	// Number of commas needed.
+	commas := (n - 1) / 3
+	buf := make([]byte, n+commas)
+	// First group length (1-3 digits before the first comma).
+	first := n - commas*3
+	copy(buf, s[:first])
+	pos := first
+	for i := first; i < n; i += 3 {
+		buf[pos] = ','
+		pos++
+		copy(buf[pos:], s[i:i+3])
+		pos += 3
+	}
+	return string(buf)
+}
+
 func formatMoney(v float64) string {
 	sign := ""
 	if v < 0 {
 		sign = "-"
 		v = -v
 	}
-	return fmt.Sprintf("%s$%0.2f", sign, v)
+	raw := fmt.Sprintf("%0.2f", v)
+	parts := strings.SplitN(raw, ".", 2)
+	return sign + "$" + insertCommas(parts[0]) + "." + parts[1]
+}
+
+func formatSignedMoney(v float64) string {
+	if v > 0 {
+		return "+" + formatMoney(v)
+	}
+	return formatMoney(v)
+}
+
+// colorPadLeft pads visible text to width, then wraps with ANSI color codes.
+// This avoids alignment bugs where fmt width miscounts invisible escape chars.
+func colorPadLeft(text string, width int, color string) string {
+	pad := width - len(text)
+	if pad <= 0 {
+		return color + text + colorReset
+	}
+	return strings.Repeat(" ", pad) + color + text + colorReset
 }
 
 func colorizeMoney(v float64) string {
-	formatted := formatMoney(v)
+	formatted := formatSignedMoney(v)
 	if v > 0 {
 		return colorGreen + formatted + colorReset
 	}
 	if v < 0 {
 		return colorRed + formatted + colorReset
 	}
-	return formatted
+	return formatMoney(v)
 }
 
 func redacted(s string) string {
