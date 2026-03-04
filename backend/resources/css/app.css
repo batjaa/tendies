@@ -158,7 +158,7 @@ html {
         -webkit-backdrop-filter: blur(40px);
         border-radius: 14px;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        width: 300px;
+        width: min(300px, calc(100vw - 48px));
         box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.05);
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         overflow: hidden;
@@ -343,6 +343,12 @@ html {
         color: #98989d;
     }
 
+    /* ── Inline code wrapping ── */
+    code {
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+
     /* ── Scroll reveal ── */
     .reveal {
         opacity: 0;
@@ -377,5 +383,29 @@ html {
 @media (max-width: 768px) {
     .terminal-body {
         font-size: 0.7rem;
+        padding: 16px;
+    }
+    .mac-statusbar {
+        font-size: 0.72rem;
+        gap: 14px;
+        padding: 5px 12px;
+    }
+    .mac-statusbar .sys-icons {
+        gap: 8px;
+        font-size: 0.68rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .terminal-body {
+        font-size: 0.6rem;
+        padding: 12px;
+        line-height: 1.55;
+    }
+    .terminal-chrome {
+        padding: 10px 14px;
+    }
+    .terminal-title {
+        margin-right: 36px;
     }
 }

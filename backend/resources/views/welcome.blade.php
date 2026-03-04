@@ -35,8 +35,20 @@
                 <li><a href="#pricing" class="nav-link text-content-muted no-underline text-sm hover:text-content">Pricing</a></li>
                 <li><a href="#direct" class="nav-link text-content-muted no-underline text-sm hover:text-content">Direct Mode</a></li>
             </ul>
-            <a href="#pricing" class="bg-gain text-black px-[18px] py-2 rounded-lg font-semibold text-[0.85rem] no-underline transition-opacity hover:opacity-85">Get Started</a>
+            <div class="flex items-center gap-3">
+                <a href="#pricing" class="bg-gain text-black px-[18px] py-2 rounded-lg font-semibold text-[0.85rem] no-underline transition-opacity hover:opacity-85">Get Started</a>
+                <button id="mobile-menu-btn" class="md:hidden text-content-muted p-1" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+            </div>
         </div>
+        <ul id="mobile-menu" class="hidden md:hidden flex-col gap-1 mt-3 list-none">
+            <li><a href="#features" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Features</a></li>
+            <li><a href="#cli" class="block py-2 text-content-muted no-underline text-sm hover:text-content">CLI</a></li>
+            <li><a href="#menubar" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Menu Bar</a></li>
+            <li><a href="#pricing" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Pricing</a></li>
+            <li><a href="#direct" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Direct Mode</a></li>
+        </ul>
     </div>
 </nav>
 
@@ -249,7 +261,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[820px] mx-auto mb-12">
-            <div class="bg-surface-raised border border-edge-subtle rounded-[14px] p-8 transition-[border-color] duration-300 hover:border-edge reveal">
+            <div class="bg-surface-raised border border-edge-subtle rounded-[14px] p-5 md:p-8 transition-[border-color] duration-300 hover:border-edge reveal">
                 <span class="font-mono text-[0.72rem] font-semibold uppercase tracking-wider text-gain bg-gain/10 border border-gain/15 px-2.5 py-1 rounded-md inline-block mb-4">Broker Mode</span>
                 <h3 class="font-display text-[1.15rem] font-bold mb-2.5">Convenient, with trade-offs</h3>
                 <p class="text-content-muted text-[0.88rem] font-light leading-relaxed mb-5">Your requests pass through our server, which proxies to the Schwab API on your behalf. This means you don't need your own Schwab developer credentials.</p>
@@ -261,7 +273,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🗑</span> Cache entries expire automatically — no permanent storage of trades</li>
                 </ul>
             </div>
-            <div class="bg-surface-raised border border-edge-subtle rounded-[14px] p-8 transition-[border-color] duration-300 hover:border-edge reveal reveal-delay-1">
+            <div class="bg-surface-raised border border-edge-subtle rounded-[14px] p-5 md:p-8 transition-[border-color] duration-300 hover:border-edge reveal reveal-delay-1">
                 <span class="font-mono text-[0.72rem] font-semibold uppercase tracking-wider text-accent bg-accent/10 border border-accent/15 px-2.5 py-1 rounded-md inline-block mb-4">Direct Mode</span>
                 <h3 class="font-display text-[1.15rem] font-bold mb-2.5">Zero trust, nothing leaves your machine</h3>
                 <p class="text-content-muted text-[0.88rem] font-light leading-relaxed mb-5">The CLI talks to the Schwab API directly using your own developer credentials. Our server is never involved.</p>
@@ -282,28 +294,28 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
         </div>
 
         <div class="flex flex-col gap-4 max-w-[620px] mx-auto reveal">
-            <div class="flex gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-5 transition-[border-color] duration-300 hover:border-edge">
+            <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">1</div>
                 <div>
                     <h4 class="font-display font-bold text-[0.95rem] mb-1">Register a Schwab app</h4>
                     <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Create a developer app at <a href="https://developer.schwab.com" class="text-accent no-underline">developer.schwab.com</a> and note your client ID and secret.</p>
                 </div>
             </div>
-            <div class="flex gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-5 transition-[border-color] duration-300 hover:border-edge">
+            <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">2</div>
                 <div>
                     <h4 class="font-display font-bold text-[0.95rem] mb-1">Configure credentials</h4>
                     <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies --config</code> and set your <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">client_id</code>, <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">client_secret</code>, and <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">redirect_url</code>.</p>
                 </div>
             </div>
-            <div class="flex gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-5 transition-[border-color] duration-300 hover:border-edge">
+            <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">3</div>
                 <div>
                     <h4 class="font-display font-bold text-[0.95rem] mb-1">Authenticate directly</h4>
                     <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies login --direct</code> to authorize with Schwab. Token goes to your macOS keychain.</p>
                 </div>
             </div>
-            <div class="flex gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-5 transition-[border-color] duration-300 hover:border-edge">
+            <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">4</div>
                 <div>
                     <h4 class="font-display font-bold text-[0.95rem] mb-1">Check your P&L</h4>
@@ -322,7 +334,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
             <h2 class="font-display font-extrabold tracking-tight mb-3" style="font-size:clamp(1.75rem,3vw,2.25rem)">Start free. Upgrade when you want the menu bar.</h2>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[400px] md:max-w-[720px] mx-auto mt-12">
-            <div class="bg-surface-raised border border-edge-subtle rounded-2xl px-8 py-9 text-left transition-[border-color] duration-300 hover:border-edge reveal">
+            <div class="bg-surface-raised border border-edge-subtle rounded-2xl px-5 py-7 md:px-8 md:py-9 text-left transition-[border-color] duration-300 hover:border-edge reveal">
                 <div class="font-display text-[1.2rem] font-bold mb-1">CLI</div>
                 <div class="text-content-muted text-[0.85rem] font-light mb-5">For developers and power users</div>
                 <div class="font-display text-[2.5rem] font-extrabold tracking-tighter mb-1">Free</div>
@@ -336,7 +348,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                 </ul>
                 <a href="#cli" class="block text-center py-3 rounded-[10px] font-semibold text-sm no-underline mt-7 border border-edge text-content transition-all hover:border-content-dim">Install Free</a>
             </div>
-            <div class="bg-surface-raised border border-gain-muted rounded-2xl px-8 py-9 text-left relative transition-[border-color] duration-300 hover:border-gain reveal reveal-delay-1">
+            <div class="bg-surface-raised border border-gain-muted rounded-2xl px-5 py-7 md:px-8 md:py-9 text-left relative transition-[border-color] duration-300 hover:border-gain reveal reveal-delay-1">
                 <div class="absolute -top-2.5 right-5 bg-gain text-black font-mono text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-md tracking-wide">PRO</div>
                 <div class="font-display text-[1.2rem] font-bold mb-1">Tendies Pro</div>
                 <div class="text-content-muted text-[0.85rem] font-light mb-5">P&L in your menu bar, zero setup</div>
@@ -419,6 +431,13 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
     }, { rootMargin: '-30% 0px -60% 0px' });
 
     sections.forEach(s => sectionObserver.observe(s));
+
+    // Close mobile menu on link click
+    document.querySelectorAll('#mobile-menu a').forEach(a => {
+        a.addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.add('hidden');
+        });
+    });
 </script>
 
 </body>
