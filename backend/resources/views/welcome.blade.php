@@ -149,32 +149,75 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                         <span class="actions">↻&nbsp;&nbsp;⚙</span>
                     </div>
                     <div class="popover-divider"></div>
+                    <div class="account-bar">
+                        <span class="account-label">Acct</span>
+                        <span class="account-chip selected">···789</span>
+                        <span class="account-chip selected">···234</span>
+                        <span class="account-chip">···567</span>
+                    </div>
                     <div class="popover-rows">
-                        <div class="popover-row active">
+                        {{-- Day — expanded with ticker drill-down --}}
+                        <div class="popover-row expanded">
+                            <span class="tf-chevron">▾</span>
                             <span class="tf-label">Day</span>
                             <span class="tf-pnl" style="color:#3fb950">+$1,234.56</span>
                             <span class="tf-trades">12 trades</span>
                         </div>
+                        <div class="ticker-list">
+                            <div class="ticker-row expanded-ticker">
+                                <span class="ticker-chevron">▾</span>
+                                <span class="ticker-symbol">HD</span>
+                                <span class="ticker-pnl" style="color:#3fb950">+$892.30</span>
+                                <span class="ticker-count">4 exe</span>
+                            </div>
+                            <div class="exec-list">
+                                <div class="exec-row">
+                                    <span class="exec-detail">9:47 SELL 50sh @ $385.10</span>
+                                    <span class="exec-pnl" style="color:#3fb950">+$132.50</span>
+                                </div>
+                                <div class="exec-matched">
+                                    <span>└ opened 9:32 &nbsp;50sh @ $382.45</span>
+                                </div>
+                                <div class="exec-row">
+                                    <span class="exec-detail">10:15 SELL 50sh @ $397.68</span>
+                                    <span class="exec-pnl" style="color:#3fb950">+$759.80</span>
+                                </div>
+                                <div class="exec-matched">
+                                    <span>└ opened 9:32 &nbsp;50sh @ $382.45</span>
+                                </div>
+                            </div>
+                            <div class="ticker-row">
+                                <span class="ticker-chevron">▸</span>
+                                <span class="ticker-symbol">META</span>
+                                <span class="ticker-pnl" style="color:#3fb950">+$567.26</span>
+                                <span class="ticker-count">3 exe</span>
+                            </div>
+                            <div class="ticker-row">
+                                <span class="ticker-chevron">▸</span>
+                                <span class="ticker-symbol">MU</span>
+                                <span class="ticker-pnl" style="color:#f85149">-$225.00</span>
+                                <span class="ticker-count">2 exe</span>
+                            </div>
+                        </div>
+                        {{-- Week — collapsed --}}
                         <div class="popover-row">
+                            <span class="tf-chevron">▸</span>
                             <span class="tf-label">Week</span>
                             <span class="tf-pnl" style="color:#3fb950">+$3,456.78</span>
                             <span class="tf-trades">45 trades</span>
                         </div>
+                        {{-- Month — collapsed --}}
                         <div class="popover-row">
+                            <span class="tf-chevron">▸</span>
                             <span class="tf-label">Month</span>
                             <span class="tf-pnl" style="color:#f85149">-$2,100.00</span>
                             <span class="tf-trades">98 trades</span>
                         </div>
-                        <div class="popover-row">
-                            <span class="tf-label">Year</span>
-                            <span class="tf-pnl" style="color:#3fb950">+$15,678.90</span>
-                            <span class="tf-trades">312 trades</span>
-                        </div>
                     </div>
                     <div class="popover-divider"></div>
                     <div class="popover-footer">
-                        <span>Account: ...789 &nbsp;·&nbsp; Updated 2m ago</span>
-                        <span style="color:#e5e5e7">Quit ▸</span>
+                        <span>Updated 2m ago</span>
+                        <span style="color:#e5e5e7">Quit</span>
                     </div>
                 </div>
             </div>
@@ -183,10 +226,10 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                 <h2 class="font-display font-extrabold tracking-tight mb-3" style="font-size:clamp(1.75rem,3vw,2.25rem)">Or just glance up.</h2>
                 <p class="text-content-muted text-[1.05rem] max-w-[520px] font-light leading-relaxed">
                     A native macOS menu bar app that shows your realized P&L at a glance.
-                    Like battery percentage, but for your gains. Click to see all timeframes, trade count, and account info.
+                    Like battery percentage, but for your gains. Drill down into tickers and individual executions with FIFO-matched lots.
                 </p>
                 <p class="text-content-muted max-w-[520px] font-light leading-relaxed mt-4 text-sm">
-                    Auto-refreshes on your schedule. No browser tabs, no Schwab UI.
+                    Switch accounts, auto-refresh on your schedule. No browser tabs, no Schwab UI.
                     Included with <strong class="text-content">Tendies Pro</strong>.
                 </p>
             </div>
@@ -283,7 +326,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                 <div class="font-display text-[1.2rem] font-bold mb-1">CLI</div>
                 <div class="text-content-muted text-[0.85rem] font-light mb-5">For developers and power users</div>
                 <div class="font-display text-[2.5rem] font-extrabold tracking-tighter mb-1">Free</div>
-                <div class="text-content-dim text-[0.82rem] mb-6">Forever</div>
+                <div class="text-content-dim text-[0.82rem] mb-6">Forever <span class="opacity-60">(or until my AWS bill becomes sentient)</span></div>
                 <ul class="flex flex-col gap-2.5 list-none">
                     <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> Terminal P&L for all timeframes</li>
                     <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> Symbol and account filtering</li>

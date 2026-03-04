@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tendies — Menu Bar App Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bar-bg: rgba(38, 38, 40, 0.92);
+    --popover-bg: rgba(30, 30, 32, 0.88);
+    --popover-border: rgba(255, 255, 255, 0.08);
+    --popover-shadow: 0 24px 80px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.06);
+    --text-primary: rgba(255, 255, 255, 0.92);
+    --text-secondary: rgba(255, 255, 255, 0.55);
+    --text-tertiary: rgba(255, 255, 255, 0.35);
+    --green: #30D158;
+    --green-dim: rgba(48, 209, 88, 0.12);
+    --red: #FF453A;
+    --red-dim: rgba(255, 69, 58, 0.12);
+    --separator: rgba(255, 255, 255, 0.06);
+    --active-row: rgba(255, 255, 255, 0.05);
+    --hover-row: rgba(255, 255, 255, 0.03);
+    --button-hover: rgba(255, 255, 255, 0.08);
+    --warning-yellow: #FFD60A;
+    --popover-width: 300px;
+
+    --light-bar-bg: rgba(234, 234, 236, 0.82);
+    --light-popover-bg: rgba(246, 246, 248, 0.92);
+    --light-popover-border: rgba(0, 0, 0, 0.08);
+    --light-popover-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.08);
+    --light-text-primary: rgba(0, 0, 0, 0.88);
+    --light-text-secondary: rgba(0, 0, 0, 0.50);
+    --light-text-tertiary: rgba(0, 0, 0, 0.30);
+    --light-green: #248A3D;
+    --light-red: #D70015;
+    --light-separator: rgba(0, 0, 0, 0.06);
+    --light-active-row: rgba(0, 0, 0, 0.04);
+    --light-hover-row: rgba(0, 0, 0, 0.02);
+    --light-button-hover: rgba(0, 0, 0, 0.06);
+    --light-warning-yellow: #B25000;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: #1a1a1c;
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 80px;
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 48px 24px 20px;
+    max-width: 520px;
+  }
+
+  .page-header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* === State Switcher === */
+  .state-switcher {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    margin: 0 auto 32px;
+    border: 1px solid rgba(255,255,255,0.04);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .state-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .state-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .state-btn.active {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.1);
+  }
+
+  /* === macOS Menu Bar === */
+  .menubar-scene {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .menubar {
+    height: 25px;
+    background: var(--bar-bg);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 12px;
+    gap: 18px;
+    border-radius: 6px 6px 0 0;
+    position: relative;
+    z-index: 10;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .menubar-item {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: default;
+    height: 25px;
+    padding: 0 4px;
+  }
+
+  .menubar-item.tendies {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    padding: 0 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .menubar-item.tendies:hover,
+  .menubar-item.tendies.open {
+    background: rgba(255,255,255,0.12);
+  }
+
+  .menubar-time { font-variant-numeric: tabular-nums; font-size: 13px; }
+  .menubar-icon { font-size: 14px; opacity: 0.85; }
+
+  /* === Desktop === */
+  .desktop {
+    background: linear-gradient(170deg, #2c1f4a 0%, #1a1a2e 30%, #16213e 60%, #0f3460 100%);
+    min-height: 520px;
+    border-radius: 0 0 6px 6px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .desktop::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 30% 40%, rgba(100, 60, 180, 0.15), transparent),
+      radial-gradient(ellipse 500px 300px at 70% 60%, rgba(15, 52, 96, 0.3), transparent);
+    pointer-events: none;
+  }
+
+  /* === Popover === */
+  .popover-anchor {
+    position: absolute;
+    top: 0;
+    right: 120px;
+    z-index: 100;
+  }
+
+  .popover {
+    position: relative;
+    top: 8px;
+    width: var(--popover-width);
+    background: var(--popover-bg);
+    backdrop-filter: blur(50px) saturate(200%);
+    -webkit-backdrop-filter: blur(50px) saturate(200%);
+    border: 1px solid var(--popover-border);
+    border-radius: 10px;
+    box-shadow: var(--popover-shadow);
+    overflow: hidden;
+    transform-origin: top center;
+    animation: popoverIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes popoverIn {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .popover::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: var(--popover-bg);
+    border-top: 1px solid var(--popover-border);
+    border-left: 1px solid var(--popover-border);
+    border-radius: 2px 0 0 0;
+  }
+
+  /* === Header === */
+  .popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+  }
+
+  .popover-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+
+  .popover-actions { display: flex; gap: 2px; }
+
+  .popover-action-btn {
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+  }
+
+  .popover-action-btn:hover {
+    background: var(--button-hover);
+    color: var(--text-primary);
+  }
+
+  .popover-action-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .popover-action-btn.spinning svg {
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .popover-separator {
+    height: 1px;
+    background: var(--separator);
+    margin: 0 14px;
+  }
+
+  /* === Account Selector === */
+  .account-bar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px 4px;
+  }
+
+  .account-bar-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 2px;
+    flex-shrink: 0;
+  }
+
+  .account-chips {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .account-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    color: var(--text-tertiary);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    padding: 2px 7px;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+  }
+
+  .account-chip:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-secondary);
+  }
+
+  .account-chip.selected {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.14);
+  }
+
+  /* === Timeframe Rows === */
+  .timeframe-list {
+    padding: 6px 6px;
+  }
+
+  .timeframe-row {
+    display: grid;
+    grid-template-columns: 14px 42px 1fr auto;
+    align-items: center;
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+    gap: 0;
+  }
+
+  .timeframe-row:hover { background: var(--hover-row); }
+  .timeframe-row.active { background: var(--active-row); }
+  .timeframe-row.expanded { background: var(--active-row); border-radius: 6px 6px 0 0; }
+
+  .tf-chevron {
+    font-size: 9px;
+    color: var(--text-tertiary);
+    transition: transform 0.15s ease;
+    width: 14px;
+    text-align: center;
+  }
+
+  .timeframe-row.expanded .tf-chevron {
+    transform: rotate(90deg);
+  }
+
+  .tf-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .timeframe-row.active .tf-label,
+  .timeframe-row.expanded .tf-label { color: var(--text-primary); }
+
+  .tf-pnl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-align: right;
+    padding-right: 12px;
+    letter-spacing: -0.3px;
+  }
+
+  .tf-pnl.positive { color: var(--green); }
+  .tf-pnl.negative { color: var(--red); }
+  .tf-pnl.zero { color: var(--text-secondary); }
+
+  .tf-trades {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-align: right;
+    min-width: 58px;
+  }
+
+  /* === Ticker Drill-Down === */
+  .ticker-list {
+    background: rgba(255,255,255,0.02);
+    border-radius: 0 0 6px 6px;
+    margin: 0 6px 2px;
+    overflow: hidden;
+    animation: expandIn 0.15s ease;
+  }
+
+  @keyframes expandIn {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 600px; }
+  }
+
+  .ticker-row {
+    display: grid;
+    grid-template-columns: 20px 1fr auto auto;
+    align-items: center;
+    padding: 5px 10px 5px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+    gap: 0;
+  }
+
+  .ticker-row:hover { background: rgba(255,255,255,0.03); }
+  .ticker-row.expanded { background: rgba(255,255,255,0.03); }
+
+  .ticker-chevron {
+    font-size: 8px;
+    color: var(--text-tertiary);
+    transition: transform 0.15s ease;
+    width: 20px;
+  }
+
+  .ticker-row.expanded .ticker-chevron {
+    transform: rotate(90deg);
+  }
+
+  .ticker-symbol {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+
+  .ticker-pnl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-align: right;
+    padding-right: 10px;
+    letter-spacing: -0.3px;
+  }
+
+  .ticker-pnl.positive { color: var(--green); }
+  .ticker-pnl.negative { color: var(--red); }
+
+  .ticker-count {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-align: right;
+    min-width: 40px;
+  }
+
+  /* === Execution Drill-Down === */
+  .exec-list {
+    background: rgba(255,255,255,0.015);
+    margin: 0 0 0 20px;
+    padding: 2px 0;
+    border-left: 1px solid var(--separator);
+    animation: expandIn 0.12s ease;
+  }
+
+  .exec-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    padding: 3px 10px 3px 10px;
+    gap: 0;
+  }
+
+  .exec-detail {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    letter-spacing: -0.3px;
+  }
+
+  .exec-side {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-align: right;
+    padding-right: 10px;
+    letter-spacing: -0.2px;
+  }
+
+  .exec-side.buy { color: var(--green); opacity: 0.7; }
+  .exec-side.sell { color: var(--red); opacity: 0.7; }
+
+  .exec-pnl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-align: right;
+    min-width: 50px;
+    letter-spacing: -0.3px;
+  }
+
+  .exec-pnl.positive { color: var(--green); }
+  .exec-pnl.negative { color: var(--red); }
+  .exec-pnl.neutral { color: var(--text-tertiary); }
+
+  /* === Footer === */
+  .popover-footer {
+    padding: 8px 14px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .footer-account {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.3px;
+  }
+
+  .footer-updated {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .footer-updated.updating { color: var(--text-secondary); }
+
+  .footer-quit {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.1s;
+  }
+
+  .footer-quit:hover {
+    color: var(--text-secondary);
+    background: var(--button-hover);
+  }
+
+  /* === Loading === */
+  .loading-state {
+    padding: 36px 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--separator);
+    border-top-color: var(--text-secondary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .loading-text { font-size: 12px; color: var(--text-tertiary); }
+
+  /* === Error === */
+  .error-state { padding: 20px 14px; }
+
+  .error-icon-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .error-icon { font-size: 16px; color: var(--warning-yellow); }
+
+  .error-title {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .error-body {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin-bottom: 12px;
+  }
+
+  .error-command-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+
+  .error-copy-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .error-copy-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+  }
+
+  .error-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 12px;
+    line-height: 1.4;
+  }
+
+  .error-detail {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    background: rgba(255,255,255,0.02);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+    letter-spacing: -0.3px;
+  }
+
+  /* === Settings === */
+  .settings-state { padding: 2px 6px 8px; }
+
+  .settings-back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    margin: 4px 0 8px;
+    border-radius: 5px;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.1s;
+  }
+
+  .settings-back:hover {
+    color: var(--text-primary);
+    background: var(--button-hover);
+  }
+
+  .settings-section { margin-bottom: 14px; }
+
+  .settings-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+    padding: 0 8px 6px;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    border-radius: 5px;
+  }
+
+  .settings-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .settings-value {
+    font-size: 12px;
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    padding: 3px 8px;
+    min-width: 80px;
+    text-align: center;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .settings-value.mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: -0.3px;
+    min-width: 0;
+    text-align: left;
+  }
+
+  /* Checkbox group */
+  .settings-checkboxes {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .settings-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.12s;
+    user-select: none;
+  }
+
+  .settings-checkbox:hover {
+    background: rgba(255,255,255,0.06);
+  }
+
+  .settings-checkbox.checked {
+    background: rgba(48, 209, 88, 0.1);
+    border-color: rgba(48, 209, 88, 0.25);
+  }
+
+  .checkbox-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+    flex-shrink: 0;
+  }
+
+  .settings-checkbox.checked .checkbox-box {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .checkbox-check {
+    display: none;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .settings-checkbox.checked .checkbox-check { display: block; }
+
+  .checkbox-label {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .settings-checkbox.checked .checkbox-label { color: var(--text-primary); }
+
+  /* Text input */
+  .settings-input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    padding: 4px 8px;
+    width: 120px;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+
+  .settings-input::placeholder {
+    color: var(--text-tertiary);
+    font-family: 'DM Sans', sans-serif;
+    font-style: italic;
+  }
+
+  .settings-input:focus {
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  .settings-toggle {
+    width: 34px;
+    height: 20px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .settings-toggle.on { background: var(--green); }
+
+  .settings-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+  }
+
+  .settings-toggle.on::after { transform: translateX(14px); }
+
+  /* === Theme Controls === */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 16px auto 32px;
+  }
+
+  .theme-toggle {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .theme-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    padding: 5px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .theme-btn:hover { color: var(--text-primary); }
+  .theme-btn.active {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.1);
+  }
+
+  /* === Light Mode === */
+  .light .menubar { background: var(--light-bar-bg); border-bottom-color: rgba(0,0,0,0.06); }
+  .light .menubar-item { color: rgba(0,0,0,0.82); }
+  .light .menubar-item.tendies:hover,
+  .light .menubar-item.tendies.open { background: rgba(0,0,0,0.08); }
+
+  .light .desktop {
+    background: linear-gradient(170deg, #c9d6e8 0%, #a8c0d8 30%, #88a8c8 60%, #7090b0 100%);
+  }
+  .light .desktop::before {
+    background:
+      radial-gradient(ellipse 600px 400px at 30% 40%, rgba(200, 210, 230, 0.4), transparent),
+      radial-gradient(ellipse 500px 300px at 70% 60%, rgba(160, 190, 220, 0.3), transparent);
+  }
+
+  .light .popover { background: var(--light-popover-bg); border-color: var(--light-popover-border); box-shadow: var(--light-popover-shadow); }
+  .light .popover::before { background: var(--light-popover-bg); border-top-color: var(--light-popover-border); border-left-color: var(--light-popover-border); }
+
+  .light .popover-title { color: var(--light-text-primary); }
+  .light .popover-action-btn { color: var(--light-text-secondary); }
+  .light .popover-action-btn:hover { background: var(--light-button-hover); color: var(--light-text-primary); }
+  .light .popover-separator { background: var(--light-separator); }
+
+  .light .tf-label { color: var(--light-text-secondary); }
+  .light .tf-chevron { color: var(--light-text-tertiary); }
+  .light .timeframe-row.active .tf-label,
+  .light .timeframe-row.expanded .tf-label { color: var(--light-text-primary); }
+  .light .timeframe-row.active { background: var(--light-active-row); }
+  .light .timeframe-row.expanded { background: var(--light-active-row); }
+  .light .timeframe-row:hover { background: var(--light-hover-row); }
+
+  .light .tf-pnl.positive { color: var(--light-green); }
+  .light .tf-pnl.negative { color: var(--light-red); }
+  .light .tf-pnl.zero { color: var(--light-text-secondary); }
+  .light .tf-trades { color: var(--light-text-tertiary); }
+
+  .light .ticker-list { background: rgba(0,0,0,0.02); }
+  .light .ticker-row:hover { background: rgba(0,0,0,0.02); }
+  .light .ticker-row.expanded { background: rgba(0,0,0,0.02); }
+  .light .ticker-chevron { color: var(--light-text-tertiary); }
+  .light .ticker-symbol { color: var(--light-text-primary); }
+  .light .ticker-pnl.positive { color: var(--light-green); }
+  .light .ticker-pnl.negative { color: var(--light-red); }
+  .light .ticker-count { color: var(--light-text-tertiary); }
+
+  .light .exec-list { background: rgba(0,0,0,0.015); border-left-color: var(--light-separator); }
+  .light .exec-detail { color: var(--light-text-tertiary); }
+  .light .exec-side.buy { color: var(--light-green); }
+  .light .exec-side.sell { color: var(--light-red); }
+  .light .exec-pnl.positive { color: var(--light-green); }
+  .light .exec-pnl.negative { color: var(--light-red); }
+  .light .exec-pnl.neutral { color: var(--light-text-tertiary); }
+
+  .light .account-bar-label { color: var(--light-text-tertiary); }
+  .light .account-chip { color: var(--light-text-tertiary); background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.06); }
+  .light .account-chip:hover { background: rgba(0,0,0,0.04); color: var(--light-text-secondary); }
+  .light .account-chip.selected { color: var(--light-text-primary); background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); }
+
+  .light .footer-account { color: var(--light-text-tertiary); }
+  .light .footer-updated { color: var(--light-text-tertiary); }
+  .light .footer-quit { color: var(--light-text-tertiary); }
+  .light .footer-quit:hover { color: var(--light-text-secondary); background: var(--light-button-hover); }
+
+  .light .loading-spinner { border-color: var(--light-separator); border-top-color: var(--light-text-secondary); }
+  .light .loading-text { color: var(--light-text-tertiary); }
+
+  .light .error-icon { color: var(--light-warning-yellow); }
+  .light .error-title { color: var(--light-text-primary); }
+  .light .error-body { color: var(--light-text-secondary); }
+  .light .error-command-box { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); color: var(--light-text-primary); }
+  .light .error-copy-btn { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); color: var(--light-text-secondary); }
+  .light .error-copy-btn:hover { background: rgba(0,0,0,0.06); color: var(--light-text-primary); }
+  .light .error-hint { color: var(--light-text-tertiary); }
+  .light .error-detail { color: var(--light-text-tertiary); background: rgba(0,0,0,0.02); }
+
+  .light .settings-section-title { color: var(--light-text-tertiary); }
+  .light .settings-label { color: var(--light-text-secondary); }
+  .light .settings-value { color: var(--light-text-primary); background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); }
+  .light .settings-back { color: var(--light-text-secondary); }
+  .light .settings-back:hover { color: var(--light-text-primary); background: var(--light-button-hover); }
+  .light .settings-toggle { background: rgba(0,0,0,0.08); }
+
+  .light .settings-checkbox { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.06); }
+  .light .settings-checkbox:hover { background: rgba(0,0,0,0.04); }
+  .light .settings-checkbox.checked { background: rgba(36,138,61,0.08); border-color: rgba(36,138,61,0.2); }
+  .light .checkbox-box { border-color: rgba(0,0,0,0.2); }
+  .light .settings-checkbox.checked .checkbox-box { background: var(--light-green); border-color: var(--light-green); }
+  .light .checkbox-label { color: var(--light-text-secondary); }
+  .light .settings-checkbox.checked .checkbox-label { color: var(--light-text-primary); }
+
+  .light .settings-input { color: var(--light-text-primary); background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); }
+  .light .settings-input::placeholder { color: var(--light-text-tertiary); }
+  .light .settings-input:focus { border-color: rgba(0,0,0,0.12); }
+
+  .state-view { animation: fadeIn 0.15s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  ::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <h1>Tendies Menu Bar</h1>
+    <p>Interactive mockup — click timeframe rows to drill down into tickers and executions.</p>
+  </div>
+
+  <div class="state-switcher" id="stateSwitcher">
+    <button class="state-btn active" data-state="loaded">Loaded</button>
+    <button class="state-btn" data-state="drilldown">Drill Down</button>
+    <button class="state-btn" data-state="refreshing">Refreshing</button>
+    <button class="state-btn" data-state="loading">Loading</button>
+    <button class="state-btn" data-state="auth-error">Auth Error</button>
+    <button class="state-btn" data-state="not-found">Not Found</button>
+    <button class="state-btn" data-state="generic-error">Error</button>
+    <button class="state-btn" data-state="zero">Zero Trades</button>
+    <button class="state-btn" data-state="settings">Settings</button>
+  </div>
+
+  <div class="controls-bar">
+    <div class="theme-toggle">
+      <button class="theme-btn active" data-theme="dark" onclick="setTheme('dark')">Dark</button>
+      <button class="theme-btn" data-theme="light" onclick="setTheme('light')">Light</button>
+    </div>
+  </div>
+
+  <div class="menubar-scene" id="scene">
+    <div class="menubar">
+      <div class="menubar-item menubar-icon">&#xf8ff;</div>
+      <div style="flex:1"></div>
+      <div class="menubar-item menubar-icon" title="Wi-Fi">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" opacity="0.85"><path d="M8 12.5a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5zm-3.18-3.18a4.5 4.5 0 016.36 0l.71-.71a5.5 5.5 0 00-7.78 0l.71.71zm-2.12-2.12a7.5 7.5 0 0110.6 0l.71-.71a8.5 8.5 0 00-12.02 0l.71.71z"/></svg>
+      </div>
+      <div class="menubar-item tendies open" id="menubarLabel">▲ +$1,234</div>
+      <div class="menubar-item menubar-icon">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" opacity="0.85"><path d="M2 5h12v6H2V5zm-1 0a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H2a1 1 0 01-1-1V5zm15 2v2h-1V7h1z"/></svg>
+      </div>
+      <div class="menubar-item menubar-time">Tue 3:42 PM</div>
+    </div>
+
+    <div class="desktop">
+      <div class="popover-anchor">
+        <div class="popover" id="popover">
+          <div class="popover-content" id="popoverContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// === Mock data for drill-down ===
+const mockTickers = {
+  Day: [
+    { symbol: 'HD', pnl: 892.30, count: 4, execs: [
+      { time: '9:32', side: 'BUY', qty: 100, price: 382.45, pnl: null },
+      { time: '9:47', side: 'SELL', qty: 50, price: 385.10, pnl: 132.50 },
+      { time: '10:15', side: 'SELL', qty: 50, price: 397.68, pnl: 759.80 },
+    ]},
+    { symbol: 'META', pnl: 567.26, count: 3, execs: [
+      { time: '10:02', side: 'BUY', qty: 50, price: 612.30, pnl: null },
+      { time: '10:34', side: 'SELL', qty: 50, price: 623.64, pnl: 567.26 },
+    ]},
+    { symbol: 'MU', pnl: -225.00, count: 2, execs: [
+      { time: '11:05', side: 'BUY', qty: 200, price: 98.50, pnl: null },
+      { time: '11:22', side: 'SELL', qty: 200, price: 97.375, pnl: -225.00 },
+    ]},
+  ],
+  Week: [
+    { symbol: 'HD', pnl: 2140.50, count: 18 },
+    { symbol: 'META', pnl: 1567.28, count: 12 },
+    { symbol: 'NVDA', pnl: -892.00, count: 8 },
+    { symbol: 'MU', pnl: 641.00, count: 7 },
+  ],
+  Month: [
+    { symbol: 'HD', pnl: -1250.00, count: 42 },
+    { symbol: 'META', pnl: 3200.80, count: 28 },
+    { symbol: 'NVDA', pnl: -4892.00, count: 18 },
+    { symbol: 'MU', pnl: 841.20, count: 10 },
+  ],
+  Year: [
+    { symbol: 'HD', pnl: 8920.50, count: 124 },
+    { symbol: 'META', pnl: 4567.40, count: 88 },
+    { symbol: 'NVDA', pnl: 1234.00, count: 56 },
+    { symbol: 'MU', pnl: 957.00, count: 44 },
+  ],
+};
+
+// SVG icons
+const refreshSvg = `<svg viewBox="0 0 16 16"><path d="M13.65 2.35A7 7 0 103.05 13.3"/><path d="M13.65 2.35L14 6h-3.65"/><path d="M2.35 13.65A7 7 0 1012.95 2.7"/></svg>`;
+const settingsSvg = `<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5"/><path d="M13.5 8c0-.3 0-.5-.04-.8l1.7-1.3-.85-1.5-2 .7c-.4-.4-.8-.6-1.3-.8L10.7 2H9l-.3 2.3c-.5.2-.9.5-1.3.8l-2-.7-.85 1.5 1.7 1.3c-.04.3-.04.5-.04.8s0 .5.04.8l-1.7 1.3.85 1.5 2-.7c.4.3.8.6 1.3.8L9 14h1.7l.3-2.3c.5-.2.9-.5 1.3-.8l2 .7.85-1.5-1.7-1.3c.04-.3.04-.5.04-.8z"/></svg>`;
+
+function makeHeader(spinClass = '', settingsActive = false) {
+  return `
+    <div class="popover-header">
+      <span class="popover-title">Tendies</span>
+      <div class="popover-actions">
+        <button class="popover-action-btn ${spinClass}" title="Refresh">${refreshSvg}</button>
+        <button class="popover-action-btn" title="Settings" ${settingsActive ? 'style="background:var(--button-hover)"' : ''}>${settingsSvg}</button>
+      </div>
+    </div>
+    <div class="popover-separator"></div>`;
+}
+
+// === Mock accounts ===
+const mockAccounts = [
+  { id: '...789', label: '...789', selected: true },
+  { id: '...234', label: '...234', selected: true },
+  { id: '...567', label: '...567', selected: false },
+];
+
+function makeAccountBar() {
+  let chips = mockAccounts.map(a =>
+    `<span class="account-chip ${a.selected ? 'selected' : ''}" onclick="toggleAccount('${a.id}')">${a.label}</span>`
+  ).join('');
+  return `
+    <div class="account-bar">
+      <span class="account-bar-label">Acct</span>
+      <div class="account-chips">${chips}</div>
+    </div>`;
+}
+
+function toggleAccount(id) {
+  const acct = mockAccounts.find(a => a.id === id);
+  if (!acct) return;
+  // Don't allow deselecting all
+  const selectedCount = mockAccounts.filter(a => a.selected).length;
+  if (acct.selected && selectedCount <= 1) return;
+  acct.selected = !acct.selected;
+  renderCurrentState();
+}
+
+function selectedAccountLabel() {
+  const sel = mockAccounts.filter(a => a.selected);
+  return sel.map(a => a.label).join(', ');
+}
+
+function makeFooter(account, updated, updatingClass = '') {
+  return `
+    <div class="popover-separator"></div>
+    <div class="popover-footer">
+      <div class="footer-left">
+        ${account ? `<span class="footer-account">${account}</span>` : ''}
+        ${updated ? `<span class="footer-updated ${updatingClass}">${updated}</span>` : ''}
+      </div>
+      <button class="footer-quit">Quit</button>
+    </div>`;
+}
+
+function pnlClass(v) { return v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero'; }
+function fmtPnl(v) {
+  if (v === 0) return '$0.00';
+  const sign = v > 0 ? '+' : '';
+  return sign + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function makeTimeframeRows(data, expandedTf = null, expandedTicker = null) {
+  let html = '<div class="timeframe-list">';
+  data.forEach(tf => {
+    const isExpanded = tf.label === expandedTf;
+    const isActive = tf.label === 'Day' && !expandedTf;
+    const cls = isExpanded ? 'expanded' : (isActive ? 'active' : '');
+    html += `
+      <div class="timeframe-row ${cls}" onclick="toggleTimeframe('${tf.label}')">
+        <span class="tf-chevron">&#9654;</span>
+        <span class="tf-label">${tf.label}</span>
+        <span class="tf-pnl ${pnlClass(tf.net)}">${fmtPnl(tf.net)}</span>
+        <span class="tf-trades">${tf.trades} trades</span>
+      </div>`;
+    if (isExpanded && mockTickers[tf.label]) {
+      html += `<div class="ticker-list">`;
+      mockTickers[tf.label].forEach(tk => {
+        const tkExpanded = tk.symbol === expandedTicker;
+        html += `
+          <div class="ticker-row ${tkExpanded ? 'expanded' : ''}" onclick="event.stopPropagation(); toggleTicker('${tf.label}', '${tk.symbol}')">
+            <span class="ticker-chevron">${tk.execs ? '&#9654;' : ''}</span>
+            <span class="ticker-symbol">${tk.symbol}</span>
+            <span class="ticker-pnl ${pnlClass(tk.pnl)}">${fmtPnl(tk.pnl)}</span>
+            <span class="ticker-count">${tk.count} exe</span>
+          </div>`;
+        if (tkExpanded && tk.execs) {
+          html += `<div class="exec-list">`;
+          tk.execs.forEach(ex => {
+            html += `
+              <div class="exec-row">
+                <span class="exec-detail">${ex.time} &middot; ${ex.qty}sh @ $${ex.price.toFixed(2)}</span>
+                <span class="exec-side ${ex.side.toLowerCase()}">${ex.side}</span>
+                <span class="exec-pnl ${ex.pnl === null ? 'neutral' : pnlClass(ex.pnl)}">${ex.pnl === null ? '—' : fmtPnl(ex.pnl)}</span>
+              </div>`;
+          });
+          html += `</div>`;
+        }
+      });
+      html += `</div>`;
+    }
+  });
+  html += '</div>';
+  return html;
+}
+
+const timeframeData = [
+  { label: 'Day', net: 1234.56, trades: 12 },
+  { label: 'Week', net: 3456.78, trades: 45 },
+  { label: 'Month', net: -2100.00, trades: 98 },
+  { label: 'Year', net: 15678.90, trades: 312 },
+];
+
+const zeroData = [
+  { label: 'Day', net: 0, trades: 0 },
+  { label: 'Week', net: 3456.78, trades: 45 },
+  { label: 'Month', net: -2100.00, trades: 98 },
+  { label: 'Year', net: 15678.90, trades: 312 },
+];
+
+// State tracking
+let currentState = 'loaded';
+let expandedTimeframe = null;
+let expandedTicker = null;
+
+function toggleTimeframe(label) {
+  if (expandedTimeframe === label) {
+    expandedTimeframe = null;
+    expandedTicker = null;
+  } else {
+    expandedTimeframe = label;
+    expandedTicker = null;
+  }
+  renderCurrentState();
+}
+
+function toggleTicker(tfLabel, tickerSymbol) {
+  if (expandedTicker === tickerSymbol) {
+    expandedTicker = null;
+  } else {
+    expandedTicker = tickerSymbol;
+  }
+  renderCurrentState();
+}
+
+function renderCurrentState() {
+  const content = document.getElementById('popoverContent');
+  const data = getStateContent(currentState);
+  document.getElementById('menubarLabel').textContent = data.label;
+  content.innerHTML = `<div class="state-view">${data.content}</div>`;
+}
+
+function getStateContent(state) {
+  switch (state) {
+    case 'loaded':
+      return {
+        label: '▲ +$1,234',
+        content: makeHeader() + makeAccountBar() +
+          makeTimeframeRows(timeframeData, expandedTimeframe, expandedTicker) +
+          makeFooter('', 'Updated 2m ago')
+      };
+
+    case 'drilldown':
+      return {
+        label: '▲ +$1,234',
+        content: makeHeader() + makeAccountBar() +
+          makeTimeframeRows(timeframeData, expandedTimeframe || 'Day', expandedTicker || 'HD') +
+          makeFooter('', 'Updated 2m ago')
+      };
+
+    case 'refreshing':
+      return {
+        label: '▲ +$1,234',
+        content: makeHeader('spinning') + makeAccountBar() +
+          makeTimeframeRows(timeframeData, expandedTimeframe, expandedTicker) +
+          makeFooter('', 'Updating...', 'updating')
+      };
+
+    case 'loading':
+      return {
+        label: '◌ $---',
+        content: makeHeader() + `
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">Loading P&L data...</span>
+          </div>` + makeFooter('', '')
+      };
+
+    case 'auth-error':
+      return {
+        label: '⚠ $---',
+        content: makeHeader() + `
+          <div class="error-state">
+            <div class="error-icon-row">
+              <span class="error-icon">&#9888;</span>
+              <span class="error-title">Authentication expired</span>
+            </div>
+            <div class="error-body">Run this command in Terminal to re-authenticate:</div>
+            <div class="error-command-box">tendies login</div>
+            <button class="error-copy-btn" onclick="copyText('tendies login', this)">&#x2398; Copy Command</button>
+            <div class="error-hint">After logging in, click refresh to reload your data.</div>
+          </div>` + makeFooter('', '')
+      };
+
+    case 'not-found':
+      return {
+        label: '⚠ $---',
+        content: makeHeader() + `
+          <div class="error-state">
+            <div class="error-icon-row">
+              <span class="error-icon">&#9888;</span>
+              <span class="error-title">tendies CLI not found</span>
+            </div>
+            <div class="error-body">Install via Homebrew to get started:</div>
+            <div class="error-command-box">brew install batjaa/tap/tendies</div>
+            <button class="error-copy-btn" onclick="copyText('brew install batjaa/tap/tendies', this)">&#x2398; Copy Command</button>
+            <div class="error-hint">Then click refresh to load your P&L data.</div>
+          </div>` + makeFooter('', '')
+      };
+
+    case 'generic-error':
+      return {
+        label: '⚠ $---',
+        content: makeHeader() + `
+          <div class="error-state">
+            <div class="error-icon-row">
+              <span class="error-icon">&#9888;</span>
+              <span class="error-title">Something went wrong</span>
+            </div>
+            <div class="error-detail">failed to load accounts:<br>connection refused</div>
+            <div class="error-hint">Try refreshing or check your network connection.</div>
+          </div>` + makeFooter('', '')
+      };
+
+    case 'zero':
+      return {
+        label: '● $0',
+        content: makeHeader() + makeAccountBar() +
+          makeTimeframeRows(zeroData, expandedTimeframe, expandedTicker) +
+          makeFooter('', 'Updated just now')
+      };
+
+    case 'settings':
+      return {
+        label: '▲ +$1,234',
+        content: makeHeader(false, true) + `
+          <div class="settings-state">
+            <button class="settings-back">&larr; Back</button>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Display</div>
+              <div class="settings-row">
+                <span class="settings-label">Timeframes</span>
+                <div class="settings-checkboxes">
+                  <div class="settings-checkbox checked" onclick="this.classList.toggle('checked')">
+                    <div class="checkbox-box"><span class="checkbox-check">&#10003;</span></div>
+                    <span class="checkbox-label">Day</span>
+                  </div>
+                  <div class="settings-checkbox checked" onclick="this.classList.toggle('checked')">
+                    <div class="checkbox-box"><span class="checkbox-check">&#10003;</span></div>
+                    <span class="checkbox-label">Week</span>
+                  </div>
+                  <div class="settings-checkbox checked" onclick="this.classList.toggle('checked')">
+                    <div class="checkbox-box"><span class="checkbox-check">&#10003;</span></div>
+                    <span class="checkbox-label">Month</span>
+                  </div>
+                  <div class="settings-checkbox checked" onclick="this.classList.toggle('checked')">
+                    <div class="checkbox-box"><span class="checkbox-check">&#10003;</span></div>
+                    <span class="checkbox-label">Year</span>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-row" style="margin-top:4px">
+                <span class="settings-label">Symbols</span>
+                <input type="text" class="settings-input" placeholder="ALL" value="" spellcheck="false">
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">Refresh</div>
+              <div class="settings-row">
+                <span class="settings-label">Interval</span>
+                <span class="settings-value">1 min &#9662;</span>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <div class="settings-section-title">General</div>
+              <div class="settings-row">
+                <span class="settings-label">CLI Path</span>
+                <span class="settings-value mono">/opt/homebrew/bin/tendies</span>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">Mode</span>
+                <span class="settings-value">Broker &#9662;</span>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">Launch at Login</span>
+                <div class="settings-toggle" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+          </div>` + makeFooter('', '')
+      };
+  }
+}
+
+function setState(state) {
+  currentState = state;
+  // Reset drill-down when switching non-drill states
+  if (state !== 'drilldown' && state !== 'loaded' && state !== 'refreshing' && state !== 'zero') {
+    expandedTimeframe = null;
+    expandedTicker = null;
+  }
+  if (state === 'drilldown') {
+    // Force open Day > HD if nothing expanded
+    if (!expandedTimeframe) expandedTimeframe = 'Day';
+    if (!expandedTicker) expandedTicker = 'HD';
+  }
+  renderCurrentState();
+  document.querySelectorAll('.state-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.state === state);
+  });
+}
+
+document.querySelectorAll('.state-btn').forEach(btn => {
+  btn.addEventListener('click', () => setState(btn.dataset.state));
+});
+
+function setTheme(theme) {
+  document.getElementById('scene').classList.toggle('light', theme === 'light');
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '&#10003; Copied';
+    setTimeout(() => btn.innerHTML = orig, 1200);
+  });
+}
+
+setState('loaded');
+</script>
+
+</body>
+</html>

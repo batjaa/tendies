@@ -185,20 +185,59 @@ html {
         background: rgba(255, 255, 255, 0.06);
         margin: 0 12px;
     }
+    /* ── Account bar ── */
+    .account-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 16px 4px;
+    }
+    .account-label {
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: #636366;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-right: 2px;
+        flex-shrink: 0;
+    }
+    .account-chip {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        font-weight: 500;
+        letter-spacing: -0.3px;
+        color: #636366;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 4px;
+        padding: 2px 7px;
+    }
+    .account-chip.selected {
+        color: #e5e5e7;
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    /* ── Timeframe rows ── */
     .popover-rows {
-        padding: 10px 8px;
+        padding: 8px 8px;
     }
     .popover-row {
         display: grid;
-        grid-template-columns: 52px 1fr auto;
+        grid-template-columns: 16px 46px 1fr auto;
         align-items: center;
         padding: 7px 10px;
         border-radius: 8px;
         font-size: 0.82rem;
-        gap: 4px;
+        gap: 0;
     }
-    .popover-row.active {
+    .popover-row.expanded {
         background: rgba(255, 255, 255, 0.06);
+        border-radius: 8px 8px 0 0;
+    }
+    .popover-row .tf-chevron {
+        font-size: 0.6rem;
+        color: #636366;
     }
     .popover-row .tf-label {
         color: #e5e5e7;
@@ -207,12 +246,94 @@ html {
     .popover-row .tf-pnl {
         font-variant-numeric: tabular-nums;
         font-weight: 500;
+        text-align: right;
+        padding-right: 10px;
+        letter-spacing: -0.3px;
     }
     .popover-row .tf-trades {
         color: #98989d;
         font-size: 0.75rem;
         text-align: right;
+        min-width: 56px;
     }
+
+    /* ── Ticker drill-down ── */
+    .ticker-list {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 0 0 8px 8px;
+        margin: 0 0 2px;
+        overflow: hidden;
+    }
+    .ticker-row {
+        display: grid;
+        grid-template-columns: 20px 1fr auto auto;
+        align-items: center;
+        padding: 5px 10px 5px 14px;
+        font-size: 0.78rem;
+        gap: 0;
+    }
+    .ticker-row.expanded-ticker {
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .ticker-chevron {
+        font-size: 0.55rem;
+        color: #636366;
+    }
+    .ticker-symbol {
+        font-family: var(--font-mono);
+        font-size: 0.76rem;
+        font-weight: 600;
+        color: #e5e5e7;
+        letter-spacing: -0.2px;
+    }
+    .ticker-pnl {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 500;
+        text-align: right;
+        padding-right: 10px;
+        letter-spacing: -0.3px;
+    }
+    .ticker-count {
+        font-size: 0.65rem;
+        color: #636366;
+        text-align: right;
+        min-width: 36px;
+    }
+
+    /* ── Execution drill-down ── */
+    .exec-list {
+        margin: 0 0 0 20px;
+        padding: 2px 0;
+        border-left: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .exec-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 3px 10px 3px 10px;
+    }
+    .exec-detail {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        color: #636366;
+        letter-spacing: -0.3px;
+    }
+    .exec-pnl {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        font-weight: 500;
+        letter-spacing: -0.3px;
+    }
+    .exec-matched {
+        padding: 1px 10px 3px 10px;
+        font-family: var(--font-mono);
+        font-size: 0.6rem;
+        color: #48484a;
+        letter-spacing: -0.3px;
+    }
+
+    /* ── Footer ── */
     .popover-footer {
         display: flex;
         align-items: center;
