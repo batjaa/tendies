@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\SchwabAuthException;
 use App\Models\SchwabToken;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -49,7 +50,7 @@ class SchwabService
 
         if (! $response->successful()) {
             report('Schwab token refresh failed: ' . $response->body());
-            throw new \RuntimeException('Schwab token refresh failed (HTTP ' . $response->status() . ')');
+            throw new SchwabAuthException('Schwab token refresh failed (HTTP ' . $response->status() . ')');
         }
 
         return $response->json();
@@ -72,7 +73,7 @@ class SchwabService
         $schwabToken = $user->schwabToken;
 
         if (! $schwabToken) {
-            throw new \RuntimeException('No Schwab token found for user');
+            throw new SchwabAuthException('No Schwab token found for user');
         }
 
         if ($schwabToken->token_expires_at && $schwabToken->token_expires_at->isFuture()) {

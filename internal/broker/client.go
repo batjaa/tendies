@@ -246,8 +246,23 @@ func (c *Client) doGet(path string, query url.Values) ([]byte, error) {
 		return nil, err
 	}
 
+	if resp.StatusCode == http.StatusUnauthorized {
+		var errResp struct {
+			Error   string `json:"error"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(body, &errResp) == nil && errResp.Message != "" {
+			return nil, fmt.Errorf("%s", errResp.Message)
+		}
+		return nil, fmt.Errorf("schwab session expired; run `tendies login` to re-authenticate")
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("broker API error %d: %s", resp.StatusCode, string(body))
+		msg := string(body)
+		if len(msg) > 200 {
+			msg = msg[:200] + "..."
+		}
+		return nil, fmt.Errorf("broker API error %d: %s", resp.StatusCode, msg)
 	}
 	return body, nil
 }

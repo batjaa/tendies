@@ -34,5 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->renderable(function (\App\Exceptions\SchwabAuthException $e, Request $request) {
+            return response()->json([
+                'error' => 'schwab_token_expired',
+                'message' => 'Schwab session expired. Run `tendies login` to re-authenticate.',
+            ], 401);
+        });
     })->create();
