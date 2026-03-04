@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Services\SchwabService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class TransactionController extends Controller
 {
@@ -26,12 +28,17 @@ class TransactionController extends Controller
             $query['types'] = $request->input('types');
         }
 
-        $transactions = $schwab->makeRequest(
-            $request->user(),
-            'get',
-            $path,
-            $query
-        );
+        $accountHash = $request->input('account_hash');
+        $start = $request->input('start');
+        $end = $request->input('end');
+        $types = $request->input('types', '');
+
+        $cacheKey = "schwab_txns:{$request->user()->id}:{$accountHash}:{$start}:{$end}:{$types}";
+        $ttl = Carbon::parse($end)->isToday() ? now()->addMinutes(5) : now()->addDays(7);
+
+        $transactions = Cache::remember($cacheKey, $ttl, function () use ($schwab, $request, $path, $query) {
+            return $schwab->makeRequest($request->user(), 'get', $path, $query);
+        });
 
         return response()->json($transactions);
     }
