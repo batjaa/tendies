@@ -23,6 +23,9 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// version is set at build time via ldflags.
+var version = "dev"
+
 const (
 	colorReset          = "\033[0m"
 	colorRed            = "\033[31m"
@@ -93,7 +96,14 @@ func main() {
 			return runAccounts(opts)
 		},
 	}
-	rootCmd.AddCommand(loginCmd, accountsCmd)
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the tendies version",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
+	}
+	rootCmd.AddCommand(loginCmd, accountsCmd, versionCmd)
 
 	rootCmd.Flags().BoolVar(&opts.showDay, "day", false, "Show realized P&L for today")
 	rootCmd.Flags().BoolVar(&opts.showWeek, "week", false, "Show realized P&L for this week")
