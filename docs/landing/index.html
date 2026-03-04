@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tendies — Realized Schwab P&L in Your Terminal</title>
+    <meta name="description" content="Track realized trading gains and losses from Schwab with FIFO lot matching. Free CLI tool and macOS menu bar app.">
+    <meta property="og:title" content="Tendies — Realized Schwab P&L">
+    <meta property="og:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for Schwab.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tendies.batjaa.site">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍗</text></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+        :root {
+            --bg: #09090b;
+            --bg-raised: #131316;
+            --bg-card: #18181b;
+            --border: #27272a;
+            --border-subtle: #1e1e21;
+            --text: #fafafa;
+            --text-muted: #a1a1aa;
+            --text-dim: #71717a;
+            --green: #22c55e;
+            --green-muted: #16a34a;
+            --green-glow: rgba(34, 197, 94, 0.15);
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --font-display: 'Bricolage Grotesque', sans-serif;
+            --font-body: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ── Dot grid background ── */
+        .dot-grid {
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle, #27272a 0.8px, transparent 0.8px);
+            background-size: 32px 32px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+            mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 70%);
+        }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        section {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Nav ── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 16px 0;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: rgba(9, 9, 11, 0.8);
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s;
+        }
+        nav.scrolled { border-bottom-color: var(--border); }
+        nav .inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo span { font-size: 1.4rem; }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 400;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text); }
+        .nav-links a.active { color: var(--green); }
+        .nav-cta {
+            background: var(--green);
+            color: #000;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .nav-cta:hover { opacity: 0.85; }
+
+        /* ── Hero ── */
+        .hero {
+            padding: 120px 0 80px;
+            text-align: center;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse, var(--green-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hero-pnl {
+            font-family: var(--font-mono);
+            font-size: clamp(3.5rem, 8vw, 6rem);
+            font-weight: 600;
+            color: var(--green);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            text-shadow: 0 0 60px var(--green-glow);
+            margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        .hero .subtitle {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 520px;
+            margin: 0 auto 40px;
+            font-weight: 300;
+            line-height: 1.7;
+        }
+
+        /* ── Install bar ── */
+        .install-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px 12px 20px;
+            margin-bottom: 32px;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+        .install-bar code {
+            color: var(--text-muted);
+        }
+        .install-bar code .prompt { color: var(--green); }
+        .install-bar code .cmd { color: var(--text); }
+        .copy-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-family: var(--font-body);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .copy-btn:hover { color: var(--text); border-color: var(--text-dim); }
+        .copy-btn.copied { color: var(--green); border-color: var(--green-muted); }
+
+        .hero-links {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            background: var(--green);
+            color: #000;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-muted);
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { color: var(--text); border-color: var(--text-dim); }
+
+        /* ── Features strip ── */
+        .features {
+            padding: 60px 0 80px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .feature-card {
+            padding: 28px;
+            background: var(--bg-raised);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            transition: border-color 0.3s;
+        }
+        .feature-card:hover { border-color: var(--border); }
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-bottom: 14px;
+            display: block;
+        }
+        .feature-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        /* ── Section headers ── */
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--green);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.75rem, 3vw, 2.25rem);
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 520px;
+            font-weight: 300;
+            line-height: 1.7;
+        }
+
+        /* ── Terminal ── */
+        .terminal-section {
+            padding: 80px 0;
+        }
+        .terminal-section .inner {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .terminal {
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+        }
+        .terminal-chrome {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 18px;
+            background: #161b22;
+            border-bottom: 1px solid #21262d;
+        }
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .terminal-dot.red { background: #ff5f57; }
+        .terminal-dot.yellow { background: #febc2e; }
+        .terminal-dot.green { background: #28c840; }
+        .terminal-title {
+            flex: 1;
+            text-align: center;
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: #8b949e;
+            margin-right: 52px;
+        }
+        .terminal-body {
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            line-height: 1.65;
+            overflow-x: auto;
+            color: #c9d1d9;
+        }
+        .terminal-body .prompt { color: var(--green); }
+        .terminal-body .cmd { color: #f0f6fc; }
+        .terminal-body .dim { color: #6e7681; }
+        .terminal-body .gain { color: #3fb950; }
+        .terminal-body .loss { color: #f85149; }
+        .terminal-body .label { color: #8b949e; }
+
+        /* ── Menu Bar ── */
+        .menubar-section {
+            padding: 80px 0;
+        }
+        .menubar-section .inner {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .mac-menubar-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .mac-statusbar {
+            background: #1c1c1e;
+            border-radius: 10px;
+            padding: 6px 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 0.8rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #e5e5e7;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+        }
+        .mac-statusbar .pnl-label {
+            font-weight: 500;
+            letter-spacing: -0.01em;
+        }
+        .mac-statusbar .sys-icons {
+            color: #98989d;
+            display: flex;
+            gap: 12px;
+            font-size: 0.75rem;
+        }
+        .mac-popover {
+            background: rgba(44, 44, 46, 0.92);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            width: 300px;
+            box-shadow:
+                0 8px 40px rgba(0,0,0,0.5),
+                0 0 0 0.5px rgba(255,255,255,0.05);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+        }
+        .popover-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px 10px;
+        }
+        .popover-header .app-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #e5e5e7;
+        }
+        .popover-header .actions {
+            display: flex;
+            gap: 10px;
+            color: #98989d;
+            font-size: 0.85rem;
+        }
+        .popover-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+            margin: 0 12px;
+        }
+        .popover-rows {
+            padding: 10px 8px;
+        }
+        .popover-row {
+            display: grid;
+            grid-template-columns: 52px 1fr auto;
+            align-items: center;
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            gap: 4px;
+        }
+        .popover-row.active {
+            background: rgba(255,255,255,0.06);
+        }
+        .popover-row .tf-label {
+            color: #e5e5e7;
+            font-weight: 500;
+        }
+        .popover-row .tf-pnl {
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+        .popover-row .tf-trades {
+            color: #98989d;
+            font-size: 0.75rem;
+            text-align: right;
+        }
+        .popover-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px 14px;
+            font-size: 0.72rem;
+            color: #98989d;
+        }
+
+        /* ── Security ── */
+        .security-section {
+            padding: 80px 0;
+        }
+        .security-section .intro {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .security-section .intro .section-desc {
+            margin: 0 auto;
+        }
+        .security-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            max-width: 820px;
+            margin: 0 auto 48px;
+        }
+        .security-mode {
+            background: var(--bg-raised);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 32px 28px;
+            transition: border-color 0.3s;
+        }
+        .security-mode:hover { border-color: var(--border); }
+        .security-mode .mode-label {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+        .security-mode .mode-label.broker {
+            color: var(--green);
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+        }
+        .security-mode .mode-label.direct {
+            color: var(--amber);
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+        }
+        .security-mode h3 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .security-mode > p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            font-weight: 300;
+            line-height: 1.65;
+            margin-bottom: 20px;
+        }
+        .security-facts {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .security-facts li {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-weight: 300;
+            line-height: 1.5;
+        }
+        .security-facts .icon {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .direct-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 620px;
+            margin: 0 auto;
+        }
+        .direct-step {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            background: var(--bg-raised);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.3s;
+        }
+        .direct-step:hover { border-color: var(--border); }
+        .step-num {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--amber);
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .step-text h4 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .step-text p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+        .step-text code {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.04);
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid var(--border-subtle);
+            color: var(--text);
+        }
+
+        /* ── Pricing ── */
+        .pricing-section {
+            padding: 80px 0;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            max-width: 720px;
+            margin: 48px auto 0;
+        }
+        .pricing-card {
+            background: var(--bg-raised);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 36px 32px;
+            transition: border-color 0.3s;
+        }
+        .pricing-card:hover { border-color: var(--border); }
+        .pricing-card.pro {
+            border-color: var(--green-muted);
+            position: relative;
+        }
+        .pricing-card.pro:hover { border-color: var(--green); }
+        .pro-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: var(--green);
+            color: #000;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 6px;
+            letter-spacing: 0.03em;
+        }
+        .pricing-card .plan-name {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .pricing-card .plan-desc {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+        }
+        .pricing-card .price {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+            letter-spacing: -0.03em;
+        }
+        .pricing-card .price-sub {
+            color: var(--text-dim);
+            font-size: 0.82rem;
+            margin-bottom: 24px;
+        }
+        .pricing-card ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .pricing-card li {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 300;
+        }
+        .pricing-card li .check {
+            color: var(--green);
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .pricing-card .plan-cta {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            margin-top: 28px;
+            transition: all 0.2s;
+        }
+        .pricing-card .plan-cta.outline {
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .pricing-card .plan-cta.outline:hover { border-color: var(--text-dim); }
+        .pricing-card .plan-cta.filled {
+            background: var(--green);
+            color: #000;
+        }
+        .pricing-card .plan-cta.filled:hover { opacity: 0.85; }
+
+        /* ── Footer ── */
+        footer {
+            padding: 48px 0;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 40px;
+        }
+        footer .inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        footer .copy {
+            color: var(--text-dim);
+            font-size: 0.82rem;
+        }
+        footer .footer-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+        footer .footer-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.82rem;
+            transition: color 0.2s;
+        }
+        footer .footer-links a:hover { color: var(--text-muted); }
+
+        /* ── Scroll reveal ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+
+        /* ── Hero entrance ── */
+        .hero-enter {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: heroIn 0.8s ease forwards;
+        }
+        .hero-enter-1 { animation-delay: 0s; }
+        .hero-enter-2 { animation-delay: 0.12s; }
+        .hero-enter-3 { animation-delay: 0.24s; }
+        .hero-enter-4 { animation-delay: 0.36s; }
+        .hero-enter-5 { animation-delay: 0.48s; }
+        @keyframes heroIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .terminal-section .inner,
+            .menubar-section .inner {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            .security-modes {
+                grid-template-columns: 1fr;
+            }
+            .menubar-section .inner {
+                direction: ltr;
+            }
+            .menubar-section .inner > :first-child { order: 2; }
+            .menubar-section .inner > :last-child { order: 1; }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+            footer .inner {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .hero { padding: 80px 0 60px; }
+            .install-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .terminal-body {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dot-grid"></div>
+
+<!-- ────────── Nav ────────── -->
+<nav id="nav">
+    <div class="container">
+        <div class="inner">
+            <a href="/" class="logo"><span>🍗</span> tendies</a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#cli">CLI</a></li>
+                <li><a href="#menubar">Menu Bar</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#direct">Direct Mode</a></li>
+            </ul>
+            <a href="#pricing" class="nav-cta">Get Started</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ────────── Hero ────────── -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-pnl hero-enter hero-enter-1">▲ +$1,234</div>
+        <h1 class="hero-enter hero-enter-2">Your P&L, always visible.</h1>
+        <p class="subtitle hero-enter hero-enter-3">
+            Track realized gains and losses from Schwab with FIFO lot matching.
+            In your terminal or your menu bar.
+        </p>
+        <div class="install-bar hero-enter hero-enter-4">
+            <code><span class="prompt">$</span> <span class="cmd">brew install batjaa/tap/tendies</span></code>
+            <button class="copy-btn" onclick="copyInstall(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy
+            </button>
+        </div>
+        <div class="hero-links hero-enter hero-enter-5">
+            <a href="#pricing" class="btn-primary">Get Started</a>
+            <a href="https://github.com/batjaa/tendies" class="btn-secondary">View on GitHub</a>
+        </div>
+    </div>
+</section>
+
+<!-- ────────── Features ────────── -->
+<section class="features" id="features">
+    <div class="container">
+        <div class="features-grid">
+            <div class="feature-card reveal">
+                <span class="feature-icon">📊</span>
+                <h3>FIFO Lot Matching</h3>
+                <p>Computes realized P&L from Schwab transactions using first-in-first-out matching, the same method used by most brokers.</p>
+            </div>
+            <div class="feature-card reveal reveal-delay-1">
+                <span class="feature-icon">📅</span>
+                <h3>Multi-Timeframe</h3>
+                <p>Day, week, month, and year-to-date views. See how your trading performs across every horizon at a glance.</p>
+            </div>
+            <div class="feature-card reveal reveal-delay-2">
+                <span class="feature-icon">🔍</span>
+                <h3>Symbol Filtering</h3>
+                <p>Drill into specific tickers. Filter by symbol or underlying to see exactly where your gains and losses are coming from.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ────────── CLI ────────── -->
+<section class="terminal-section" id="cli">
+    <div class="container">
+        <div class="inner">
+            <div class="reveal">
+                <div class="section-label">CLI</div>
+                <h2 class="section-title">Built for the terminal.</h2>
+                <p class="section-desc">
+                    One command gives you realized P&L across every timeframe.
+                    Filter by symbol, pick an account, or enable debug mode for full lot-matching detail.
+                </p>
+            </div>
+            <div class="terminal reveal reveal-delay-1">
+                <div class="terminal-chrome">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                    <div class="terminal-title">tendies --day</div>
+                </div>
+                <div class="terminal-body"><span class="prompt">$</span> <span class="cmd">tendies --day</span>
+
+<span class="dim">Tendies Realized P&L (2026-03-04 15:30:00 EST)</span>
+<span class="dim">Account: ...789</span>
+
+<span class="label">Period        Gains        Losses           Net   Trades</span>
+<span class="dim">──────────────────────────────────────────────────────────</span>
+Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</span>    <span class="gain">+$1,234.56</span>       12
+
+<span class="label">Trades:</span>
+  <span class="label">Time              Symbol                          Qty          P&L     Hold</span>
+  <span class="dim">───────────────────────────────────────────────────────────────────────────────</span>
+  Mar 04 09:31      NVDA                            100     <span class="gain">+$456.78</span>      23m
+  Mar 04 09:45      TSLA                             50     <span class="gain">+$234.12</span>      15m
+  Mar 04 10:12      AMD                             200      <span class="loss">-$89.45</span>       8m
+  Mar 04 11:02      META                            150     <span class="gain">+$633.11</span>      45m</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ────────── Menu Bar ────────── -->
+<section class="menubar-section" id="menubar">
+    <div class="container">
+        <div class="inner">
+            <div class="mac-menubar-demo reveal">
+                <div class="mac-statusbar">
+                    <span class="pnl-label">▲ +$1,234</span>
+                    <span class="sys-icons">
+                        <span>Wi-Fi</span>
+                        <span>100%</span>
+                        <span>3:30 PM</span>
+                    </span>
+                </div>
+                <div class="mac-popover">
+                    <div class="popover-header">
+                        <span class="app-name">Tendies</span>
+                        <span class="actions">↻&nbsp;&nbsp;⚙</span>
+                    </div>
+                    <div class="popover-divider"></div>
+                    <div class="popover-rows">
+                        <div class="popover-row active">
+                            <span class="tf-label">Day</span>
+                            <span class="tf-pnl" style="color:#3fb950">+$1,234.56</span>
+                            <span class="tf-trades">12 trades</span>
+                        </div>
+                        <div class="popover-row">
+                            <span class="tf-label">Week</span>
+                            <span class="tf-pnl" style="color:#3fb950">+$3,456.78</span>
+                            <span class="tf-trades">45 trades</span>
+                        </div>
+                        <div class="popover-row">
+                            <span class="tf-label">Month</span>
+                            <span class="tf-pnl" style="color:#f85149">-$2,100.00</span>
+                            <span class="tf-trades">98 trades</span>
+                        </div>
+                        <div class="popover-row">
+                            <span class="tf-label">Year</span>
+                            <span class="tf-pnl" style="color:#3fb950">+$15,678.90</span>
+                            <span class="tf-trades">312 trades</span>
+                        </div>
+                    </div>
+                    <div class="popover-divider"></div>
+                    <div class="popover-footer">
+                        <span>Account: ...789 &nbsp;·&nbsp; Updated 2m ago</span>
+                        <span style="color:#e5e5e7">Quit ▸</span>
+                    </div>
+                </div>
+            </div>
+            <div class="reveal reveal-delay-1">
+                <div class="section-label">Menu Bar App</div>
+                <h2 class="section-title">Or just glance up.</h2>
+                <p class="section-desc">
+                    A native macOS menu bar app that shows your realized P&L at a glance.
+                    Like battery percentage, but for your gains. Click to see all timeframes, trade count, and account info.
+                </p>
+                <p class="section-desc" style="margin-top: 16px; font-size: 0.9rem;">
+                    Auto-refreshes on your schedule. No browser tabs, no Schwab UI.
+                    Included with <strong style="color:var(--text)">Tendies Pro</strong>.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ────────── Security & Privacy ────────── -->
+<section class="security-section" id="direct">
+    <div class="container">
+        <div class="intro reveal">
+            <div class="section-label">Security & Privacy</div>
+            <h2 class="section-title">Honest about what touches our server.</h2>
+            <p class="section-desc">
+                Your brokerage data is sensitive. Here's exactly what happens in each mode — no vague promises.
+            </p>
+        </div>
+
+        <div class="security-modes">
+            <div class="security-mode reveal">
+                <span class="mode-label broker">Broker Mode</span>
+                <h3>Convenient, with trade-offs</h3>
+                <p>Your requests pass through our server, which proxies to the Schwab API on your behalf. This means you don't need your own Schwab developer credentials.</p>
+                <ul class="security-facts">
+                    <li><span class="icon">🔐</span> Schwab tokens encrypted at rest (AES-256-CBC)</li>
+                    <li><span class="icon">⏱</span> Transaction data cached temporarily (5 min for today, 7 days for past dates) to reduce API calls</li>
+                    <li><span class="icon">👤</span> No real names or emails stored — accounts identified by token hash</li>
+                    <li><span class="icon">🚫</span> Trading data never sold, shared, or used for analytics</li>
+                    <li><span class="icon">🗑</span> Cache entries expire automatically — no permanent storage of trades</li>
+                </ul>
+            </div>
+            <div class="security-mode reveal reveal-delay-1">
+                <span class="mode-label direct">Direct Mode</span>
+                <h3>Zero trust, nothing leaves your machine</h3>
+                <p>The CLI talks to the Schwab API directly using your own developer credentials. Our server is never involved.</p>
+                <ul class="security-facts">
+                    <li><span class="icon">🏠</span> All API calls go from your machine to Schwab — no middleman</li>
+                    <li><span class="icon">🔑</span> OAuth token stored in your macOS keychain</li>
+                    <li><span class="icon">📖</span> CLI is open source — inspect every line</li>
+                    <li><span class="icon">🌐</span> No server, no account, no tracking</li>
+                    <li><span class="icon">⚡</span> Requires registering your own app at developer.schwab.com</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="reveal" style="text-align:center;margin-bottom:32px">
+            <p class="section-desc" style="margin:0 auto 24px;font-size:0.95rem">
+                <strong style="color:var(--text)">Want to go fully local?</strong> Set up direct mode in 4 steps:
+            </p>
+        </div>
+
+        <div class="direct-steps reveal">
+            <div class="direct-step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <h4>Register a Schwab app</h4>
+                    <p>Create a developer app at <a href="https://developer.schwab.com" style="color:var(--amber);text-decoration:none">developer.schwab.com</a> and note your client ID and secret.</p>
+                </div>
+            </div>
+            <div class="direct-step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <h4>Configure credentials</h4>
+                    <p>Run <code>tendies --config</code> and set your <code>client_id</code>, <code>client_secret</code>, and <code>redirect_url</code>.</p>
+                </div>
+            </div>
+            <div class="direct-step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <h4>Authenticate directly</h4>
+                    <p>Run <code>tendies login --direct</code> to authorize with Schwab. Token goes to your macOS keychain.</p>
+                </div>
+            </div>
+            <div class="direct-step">
+                <div class="step-num">4</div>
+                <div class="step-text">
+                    <h4>Check your P&L</h4>
+                    <p>Run <code>tendies --direct --day</code>. All data stays local.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ────────── Pricing ────────── -->
+<section class="pricing-section" id="pricing">
+    <div class="container" style="text-align:center">
+        <div class="reveal">
+            <div class="section-label">Pricing</div>
+            <h2 class="section-title">Start free. Upgrade when you want the menu bar.</h2>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card reveal">
+                <div class="plan-name">CLI</div>
+                <div class="plan-desc">For developers and power users</div>
+                <div class="price">Free</div>
+                <div class="price-sub">Forever</div>
+                <ul>
+                    <li><span class="check">✓</span> Terminal P&L for all timeframes</li>
+                    <li><span class="check">✓</span> Symbol and account filtering</li>
+                    <li><span class="check">✓</span> FIFO lot matching engine</li>
+                    <li><span class="check">✓</span> Direct mode (bring your own credentials)</li>
+                    <li><span class="check">✓</span> Open source</li>
+                </ul>
+                <a href="#cli" class="plan-cta outline">Install Free</a>
+            </div>
+            <div class="pricing-card pro reveal reveal-delay-1">
+                <div class="pro-badge">PRO</div>
+                <div class="plan-name">Tendies Pro</div>
+                <div class="plan-desc">P&L in your menu bar, zero setup</div>
+                <div class="price">$5<span style="font-size:1rem;font-weight:400;color:var(--text-muted)">/mo</span></div>
+                <div class="price-sub">or $40/year (save 2 months) &nbsp;·&nbsp; 7-day free trial</div>
+                <ul>
+                    <li><span class="check">✓</span> Everything in CLI</li>
+                    <li><span class="check">✓</span> macOS menu bar app</li>
+                    <li><span class="check">✓</span> Auto-refresh on your schedule</li>
+                    <li><span class="check">✓</span> No Schwab developer app needed</li>
+                    <li><span class="check">✓</span> Managed token refresh</li>
+                </ul>
+                <a href="#" class="plan-cta filled">Start Free Trial</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ────────── Footer ────────── -->
+<footer>
+    <div class="container">
+        <div class="inner">
+            <span class="copy">© 2026 tendies</span>
+            <ul class="footer-links">
+                <li><a href="https://github.com/batjaa/tendies">GitHub</a></li>
+                <li><a href="https://github.com/batjaa/tendies#local-development">Docs</a></li>
+            </ul>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Sticky nav border
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 10);
+    });
+
+    // Copy install command
+    function copyInstall(btn) {
+        navigator.clipboard.writeText('brew install batjaa/tap/tendies');
+        btn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Copied
+        `;
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy
+            `;
+            btn.classList.remove('copied');
+        }, 2000);
+    }
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Active nav link tracking
+    const sections = document.querySelectorAll('section[id]');
+    const navAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute('id');
+                navAnchors.forEach(a => {
+                    a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+                });
+            }
+        });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+
+    sections.forEach(s => sectionObserver.observe(s));
+</script>
+
+</body>
+</html>
