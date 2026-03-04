@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"math"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -57,6 +59,7 @@ type cliOptions struct {
 	accountID      string
 	showCfg        bool
 	direct         bool
+	jsonOutput     bool
 }
 
 func main() {
@@ -72,7 +75,12 @@ func main() {
 			if opts.showCfg {
 				return runConfig()
 			}
-			return runPnL(opts)
+			err := runPnL(opts)
+			if err != nil && opts.jsonOutput {
+				writeJSONError(err)
+				os.Exit(1)
+			}
+			return err
 		},
 	}
 	loginCmd := &cobra.Command{
@@ -116,6 +124,7 @@ func main() {
 	rootCmd.PersistentFlags().BoolVar(&opts.refreshDetails, "refresh-details", false, "Refresh cached account display details")
 	rootCmd.Flags().StringVar(&opts.accountID, "account", "", "Account hash or account number")
 	rootCmd.Flags().BoolVar(&opts.showCfg, "config", false, "Initialize/show configuration")
+	rootCmd.Flags().BoolVar(&opts.jsonOutput, "json", false, "Output structured JSON to stdout (for menu bar app)")
 	rootCmd.PersistentFlags().BoolVar(&opts.direct, "direct", false, "Use direct Schwab API (requires own Schwab app credentials)")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -154,8 +163,10 @@ func runConfig() error {
 }
 
 func runPnL(opts *cliOptions) error {
-	if err := validateTimeframeFlags(opts); err != nil {
-		return err
+	if !opts.jsonOutput {
+		if err := validateTimeframeFlags(opts); err != nil {
+			return err
+		}
 	}
 
 	cfg, err := config.Load()
@@ -164,6 +175,12 @@ func runPnL(opts *cliOptions) error {
 	}
 
 	ctx := context.Background()
+
+	// In JSON mode, suppress spinners and stderr output.
+	run := runWithSpinner
+	if opts.jsonOutput {
+		run = func(_ string, fn func() error) error { return fn() }
+	}
 
 	// Build data source: broker (default) or direct Schwab.
 	var ds schwab.TransactionFetcher
@@ -184,7 +201,7 @@ func runPnL(opts *cliOptions) error {
 			return errors.New("no OAuth token in keychain; run `tendies login --direct` first")
 		}
 		client = schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
-		if err := runWithSpinner("Refreshing OAuth token", func() error {
+		if err := run("Refreshing OAuth token", func() error {
 			var refreshErr error
 			token, refreshErr = ensureFreshToken(ctx, client, token)
 			return refreshErr
@@ -202,7 +219,7 @@ func runPnL(opts *cliOptions) error {
 	}
 
 	var accounts []schwab.AccountNumber
-	if err := runWithSpinner("Loading accounts", func() error {
+	if err := run("Loading accounts", func() error {
 		var loadErr error
 		accounts, loadErr = ds.GetAccountNumbers(ctx)
 		return loadErr
@@ -213,7 +230,7 @@ func runPnL(opts *cliOptions) error {
 	displayByHash := make(map[string]string, len(accounts))
 	cacheUpdated := false
 	if client != nil {
-		if err := runWithSpinner("Loading account display names", func() error {
+		if err := run("Loading account display names", func() error {
 			displayByHash, cacheUpdated = resolveAccountDisplayNames(ctx, client, cfg, accounts, opts.refreshDetails)
 			return nil
 		}); err != nil {
@@ -226,7 +243,9 @@ func runPnL(opts *cliOptions) error {
 	}
 	if cacheUpdated {
 		if err := cfg.Save(); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to persist display-name cache: %v\n", err)
+			if !opts.jsonOutput {
+				fmt.Fprintf(os.Stderr, "Warning: failed to persist display-name cache: %v\n", err)
+			}
 		}
 	}
 
@@ -237,6 +256,17 @@ func runPnL(opts *cliOptions) error {
 	}
 
 	timeframes := selectedTimeframes(opts, time.Now())
+	if opts.jsonOutput {
+		// Exclude Year from JSON output.
+		filtered := make([]timeframe, 0, len(timeframes))
+		for _, tf := range timeframes {
+			if tf.Name != "Year" {
+				filtered = append(filtered, tf)
+			}
+		}
+		timeframes = filtered
+	}
+
 	if opts.debug {
 		fmt.Fprintf(os.Stderr, "Debug: timeframes=%d accounts=%d\n", len(timeframes), len(selected))
 		if len(symbolFilter) > 0 {
@@ -259,7 +289,7 @@ func runPnL(opts *cliOptions) error {
 				accountLabel = accountHash
 			}
 			label := fmt.Sprintf("Calculating %s P&L for %s", strings.ToLower(tf.Name), accountLabel)
-			if err := runWithSpinner(label, func() error {
+			if err := run(label, func() error {
 				var calcErr error
 				s, calcErr = schwab.CalculateRealizedPnL(ctx, ds, accountHash, tf.From, tf.To)
 				return calcErr
@@ -295,6 +325,10 @@ func runPnL(opts *cliOptions) error {
 			label = hash
 		}
 		selectedLabels = append(selectedLabels, label)
+	}
+
+	if opts.jsonOutput {
+		return outputJSON(results, selectedLabels, warnings, time.Now())
 	}
 
 	printSummary(results, selectedLabels, time.Now().Location())
@@ -1146,4 +1180,187 @@ func redacted(s string) string {
 		return "******"
 	}
 	return s[:3] + strings.Repeat("*", len(s)-6) + s[len(s)-3:]
+}
+
+// JSON output functions
+
+func outputJSON(results []timeframeResult, accounts []string, warnings []string, now time.Time) error {
+	output := buildJSONOutput(results, accounts, warnings, now)
+	data, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON output: %w", err)
+	}
+	_, err = os.Stdout.Write(data)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stdout)
+	return nil
+}
+
+func buildJSONOutput(results []timeframeResult, accounts []string, warnings []string, now time.Time) *schwab.JSONOutput {
+	output := &schwab.JSONOutput{
+		Accounts:  accounts,
+		Warnings:  uniqueStrings(warnings),
+		UpdatedAt: now.Format(time.RFC3339),
+	}
+	if output.Warnings == nil {
+		output.Warnings = []string{}
+	}
+	if output.Accounts == nil {
+		output.Accounts = []string{}
+	}
+
+	for _, r := range results {
+		includeCloses := r.Label == "Day" || r.Label == "Week"
+		tf := schwab.JSONTimeframe{
+			Label:      r.Label,
+			Gains:      roundCents(r.Summary.TotalGain),
+			Losses:     roundCents(r.Summary.TotalLoss),
+			Net:        roundCents(r.Summary.NetGain),
+			TradeCount: r.Summary.TradeCount,
+			Tickers:    buildJSONTickers(r.Summary.Trades, includeCloses),
+		}
+		output.Timeframes = append(output.Timeframes, tf)
+	}
+
+	if output.Timeframes == nil {
+		output.Timeframes = []schwab.JSONTimeframe{}
+	}
+
+	return output
+}
+
+func buildJSONTickers(trades []schwab.ClosedTrade, includeCloses bool) []schwab.JSONTicker {
+	type tickerData struct {
+		trades []schwab.ClosedTrade
+		net    float64
+	}
+	groups := make(map[string]*tickerData)
+	var order []string
+
+	for _, t := range trades {
+		key := t.Symbol
+		if _, exists := groups[key]; !exists {
+			groups[key] = &tickerData{}
+			order = append(order, key)
+		}
+		groups[key].trades = append(groups[key].trades, t)
+		groups[key].net += t.RealizedPnL
+	}
+
+	sort.Strings(order)
+
+	tickers := make([]schwab.JSONTicker, 0, len(order))
+	for _, sym := range order {
+		data := groups[sym]
+		ticker := schwab.JSONTicker{
+			Symbol:     sym,
+			Net:        roundCents(data.net),
+			TradeCount: len(data.trades),
+		}
+
+		if underlying, expiry, strike, optType, ok := schwab.ParseOCCSymbol(sym); ok {
+			ticker.Type = "option"
+			ticker.Underlying = underlying
+			ticker.Expiry = expiry
+			ticker.Strike = strike
+			ticker.OptionType = optType
+			ticker.Display = formatOptionDisplay(underlying, expiry, strike, optType)
+		} else {
+			ticker.Type = "equity"
+			ticker.Display = strings.TrimSpace(sym)
+		}
+
+		if includeCloses {
+			closes := make([]schwab.JSONClose, 0, len(data.trades))
+			for _, t := range data.trades {
+				c := schwab.JSONClose{
+					Time:     t.CloseTime.Format(time.RFC3339),
+					Side:     inferSide(t, ticker.Type),
+					Quantity: t.Quantity,
+					Price:    t.ClosePrice,
+					PnL:      roundCents(t.RealizedPnL),
+				}
+				for _, m := range t.MatchedOpenings {
+					c.MatchedOpens = append(c.MatchedOpens, schwab.JSONMatchedOpen{
+						Time:     m.OpenTime.Format(time.RFC3339),
+						Quantity: m.Quantity,
+						Price:    m.OpenPrice,
+					})
+				}
+				if c.MatchedOpens == nil {
+					c.MatchedOpens = []schwab.JSONMatchedOpen{}
+				}
+				closes = append(closes, c)
+			}
+			ticker.Closes = closes
+		}
+		// When includeCloses is false, Closes stays nil → JSON "null"
+
+		tickers = append(tickers, ticker)
+	}
+
+	if tickers == nil {
+		tickers = []schwab.JSONTicker{}
+	}
+
+	return tickers
+}
+
+func inferSide(t schwab.ClosedTrade, assetType string) string {
+	if assetType == "option" {
+		if t.CloseCash >= 0 {
+			return "SELL_TO_CLOSE"
+		}
+		return "BUY_TO_CLOSE"
+	}
+	if t.CloseCash >= 0 {
+		return "SELL"
+	}
+	return "BUY"
+}
+
+func formatOptionDisplay(underlying, expiry string, strike float64, optionType string) string {
+	t, err := time.Parse("2006-01-02", expiry)
+	if err != nil {
+		return underlying
+	}
+	typeChar := "C"
+	if optionType == "PUT" {
+		typeChar = "P"
+	}
+	strikeStr := strconv.FormatFloat(strike, 'f', -1, 64)
+	return fmt.Sprintf("%s %s $%s%s", underlying, t.Format("01/02"), strikeStr, typeChar)
+}
+
+func roundCents(v float64) float64 {
+	return math.Round(v*100) / 100
+}
+
+func writeJSONError(err error) {
+	code, msg := classifyError(err)
+	errObj := map[string]string{
+		"error":   code,
+		"message": msg,
+	}
+	data, _ := json.Marshal(errObj)
+	fmt.Fprintln(os.Stderr, string(data))
+}
+
+func classifyError(err error) (string, string) {
+	msg := err.Error()
+	msgLower := strings.ToLower(msg)
+	switch {
+	case strings.Contains(msgLower, "schwab session expired"),
+		strings.Contains(msgLower, "failed to refresh oauth token"):
+		return "schwab_token_expired", msg
+	case strings.Contains(msgLower, "no broker token in keychain"),
+		strings.Contains(msgLower, "no oauth token in keychain"),
+		strings.Contains(msgLower, "broker_client_id not set"),
+		strings.Contains(msgLower, "missing schwab credentials"):
+		return "auth_expired", msg
+	default:
+		return "generic", msg
+	}
 }

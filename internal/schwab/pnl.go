@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +19,7 @@ type ClosedTrade struct {
 	OpenCash        float64 // cash flow from opening (negative for longs, positive for shorts)
 	CloseCash       float64 // cash flow from closing (positive for longs, negative for shorts)
 	RealizedPnL     float64
+	ClosePrice      float64
 	MatchedOpenings []MatchedOpening
 }
 
@@ -28,6 +30,7 @@ type MatchedOpening struct {
 	Quantity        float64
 	OpenCash        float64
 	OpenCashPerUnit float64
+	OpenPrice       float64
 }
 
 // PnLSummary contains realized P&L for a time period
@@ -48,6 +51,7 @@ type parsedTrade struct {
 	symbol         string
 	qty            float64 // always positive
 	netAmount      float64 // total cash flow including fees (sign preserved)
+	price          float64 // per-unit execution price
 	positionEffect string  // "OPENING" or "CLOSING"
 	inRange        bool    // true if this trade is in the target date range
 }
@@ -68,6 +72,7 @@ type lot struct {
 	openTime       time.Time
 	cashPerUnit    float64
 	qtyRemain      float64
+	price          float64
 }
 
 // TransactionFetcher abstracts the data source for account and transaction data.
@@ -229,6 +234,7 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 				openTime:       t.time,
 				cashPerUnit:    t.netAmount / t.qty,
 				qtyRemain:      t.qty,
+				price:          t.price,
 			})
 			continue
 		}
@@ -269,6 +275,7 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 				Quantity:        matched,
 				OpenCash:        lots[c.idx].cashPerUnit * matched,
 				OpenCashPerUnit: lots[c.idx].cashPerUnit,
+				OpenPrice:       lots[c.idx].price,
 			})
 			lots[c.idx].qtyRemain -= matched
 			remaining -= matched
@@ -292,6 +299,7 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 				OpenCash:        openCashTotal,
 				CloseCash:       t.netAmount,
 				RealizedPnL:     pnl,
+				ClosePrice:      t.price,
 				MatchedOpenings: matchedOpenings,
 			})
 		}
@@ -364,6 +372,7 @@ func parseTrades(txns []Transaction) []parsedTrade {
 			if item.Instrument.AssetType != "CURRENCY" {
 				t.symbol = item.Instrument.Symbol
 				t.qty = math.Abs(item.Amount)
+				t.price = item.Price
 				t.positionEffect = item.PositionEffect
 			}
 		}
@@ -374,4 +383,93 @@ func parseTrades(txns []Transaction) []parsedTrade {
 	}
 
 	return trades
+}
+
+// JSON output types for --json flag
+
+type JSONOutput struct {
+	Timeframes []JSONTimeframe `json:"timeframes"`
+	Accounts   []string        `json:"accounts"`
+	Warnings   []string        `json:"warnings"`
+	UpdatedAt  string          `json:"updated_at"`
+}
+
+type JSONTimeframe struct {
+	Label      string       `json:"label"`
+	Gains      float64      `json:"gains"`
+	Losses     float64      `json:"losses"`
+	Net        float64      `json:"net"`
+	TradeCount int          `json:"trade_count"`
+	Tickers    []JSONTicker `json:"tickers"`
+}
+
+type JSONTicker struct {
+	Symbol     string      `json:"symbol"`
+	Display    string      `json:"display"`
+	Type       string      `json:"type"`
+	Underlying string      `json:"underlying,omitempty"`
+	Expiry     string      `json:"expiry,omitempty"`
+	Strike     float64     `json:"strike,omitempty"`
+	OptionType string      `json:"option_type,omitempty"`
+	Net        float64     `json:"net"`
+	TradeCount int         `json:"trade_count"`
+	Closes     []JSONClose `json:"closes"`
+}
+
+type JSONClose struct {
+	Time         string            `json:"time"`
+	Side         string            `json:"side"`
+	Quantity     float64           `json:"quantity"`
+	Price        float64           `json:"price"`
+	PnL          float64           `json:"pnl"`
+	MatchedOpens []JSONMatchedOpen `json:"matched_opens"`
+}
+
+type JSONMatchedOpen struct {
+	Time     string  `json:"time"`
+	Quantity float64 `json:"quantity"`
+	Price    float64 `json:"price"`
+}
+
+// ParseOCCSymbol parses an OCC option symbol (e.g., "HD    250307C00380000")
+// into its components. Returns ok=false if not a valid OCC symbol.
+func ParseOCCSymbol(symbol string) (underlying, expiry string, strike float64, optionType string, ok bool) {
+	// OCC format: 6-char padded underlying + YYMMDD + C/P + 8-digit strike (thousandths)
+	if len(symbol) != 21 {
+		return "", "", 0, "", false
+	}
+
+	underlying = strings.TrimSpace(symbol[:6])
+	if underlying == "" {
+		return "", "", 0, "", false
+	}
+
+	dateStr := symbol[6:12]
+	cpFlag := symbol[12:13]
+	strikeStr := symbol[13:21]
+
+	yy, err1 := strconv.Atoi(dateStr[:2])
+	mm, err2 := strconv.Atoi(dateStr[2:4])
+	dd, err3 := strconv.Atoi(dateStr[4:6])
+	if err1 != nil || err2 != nil || err3 != nil || mm < 1 || mm > 12 || dd < 1 || dd > 31 {
+		return "", "", 0, "", false
+	}
+	expiry = fmt.Sprintf("20%02d-%02d-%02d", yy, mm, dd)
+
+	switch cpFlag {
+	case "C":
+		optionType = "CALL"
+	case "P":
+		optionType = "PUT"
+	default:
+		return "", "", 0, "", false
+	}
+
+	strikeInt, err := strconv.Atoi(strikeStr)
+	if err != nil {
+		return "", "", 0, "", false
+	}
+	strike = float64(strikeInt) / 1000.0
+
+	return underlying, expiry, strike, optionType, true
 }
