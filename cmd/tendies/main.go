@@ -83,7 +83,11 @@ func main() {
 			return err
 		},
 	}
-	loginCmd := &cobra.Command{
+	authCmd := &cobra.Command{
+		Use:   "auth",
+		Short: "Manage authentication",
+	}
+	authLoginCmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate and save OAuth token",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -96,6 +100,17 @@ func main() {
 			return runBrokerLogin()
 		},
 	}
+	authLogoutCmd := &cobra.Command{
+		Use:   "logout",
+		Short: "Remove saved OAuth token from keychain",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
+			}
+			return runLogout(opts)
+		},
+	}
+	authCmd.AddCommand(authLoginCmd, authLogoutCmd)
 	accountsCmd := &cobra.Command{
 		Use:   "accounts",
 		Short: "List accessible Schwab accounts",
@@ -113,7 +128,7 @@ func main() {
 			fmt.Println(version)
 		},
 	}
-	rootCmd.AddCommand(loginCmd, accountsCmd, versionCmd)
+	rootCmd.AddCommand(authCmd, accountsCmd, versionCmd)
 
 	rootCmd.Flags().BoolVar(&opts.showDay, "day", false, "Show realized P&L for today")
 	rootCmd.Flags().BoolVar(&opts.showWeek, "week", false, "Show realized P&L for this week")
@@ -198,7 +213,7 @@ func runPnL(opts *cliOptions) error {
 			return loadErr
 		}
 		if token == nil {
-			return errors.New("no OAuth token in keychain; run `tendies login --direct` first")
+			return errors.New("no OAuth token in keychain; run `tendies auth login --direct` first")
 		}
 		client = schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
 		if err := run("Refreshing OAuth token", func() error {
@@ -352,7 +367,7 @@ func buildBrokerClient(cfg *config.Config) (*broker.Client, error) {
 		return nil, err
 	}
 	if bt == nil {
-		return nil, errors.New("no broker token in keychain; run `tendies login` first")
+		return nil, errors.New("no broker token in keychain; run `tendies auth login` first")
 	}
 
 	bc := broker.NewClient(cfg.BrokerURL, clientID)
@@ -536,6 +551,21 @@ func runDirectLogin() error {
 	return nil
 }
 
+func runLogout(opts *cliOptions) error {
+	if opts.direct {
+		if err := config.DeleteToken(); err != nil {
+			return fmt.Errorf("failed to delete token: %w", err)
+		}
+		fmt.Println("Logged out (direct mode token removed).")
+	} else {
+		if err := config.DeleteBrokerToken(); err != nil {
+			return fmt.Errorf("failed to delete token: %w", err)
+		}
+		fmt.Println("Logged out (broker token removed).")
+	}
+	return nil
+}
+
 func runAccounts(opts *cliOptions) error {
 	cfg, err := config.Load()
 	if err != nil {
@@ -560,7 +590,7 @@ func runAccounts(opts *cliOptions) error {
 			return loadErr
 		}
 		if token == nil {
-			return errors.New("no OAuth token in keychain; run `tendies login --direct` first")
+			return errors.New("no OAuth token in keychain; run `tendies auth login --direct` first")
 		}
 		client = schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
 		if err := runWithSpinner("Refreshing OAuth token", func() error {

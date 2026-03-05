@@ -293,7 +293,7 @@ func (c *Client) doGet(ctx context.Context, path string, query url.Values) ([]by
 			if json.Unmarshal(body, &errResp) == nil && errResp.Message != "" {
 				return nil, fmt.Errorf("%s", errResp.Message)
 			}
-			return nil, fmt.Errorf("schwab session expired; run `tendies login` to re-authenticate")
+			return nil, fmt.Errorf("schwab session expired; run `tendies auth login` to re-authenticate")
 		}
 
 		if resp.StatusCode != http.StatusOK {

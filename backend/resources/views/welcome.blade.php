@@ -312,7 +312,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">3</div>
                 <div>
                     <h4 class="font-display font-bold text-[0.95rem] mb-1">Authenticate directly</h4>
-                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies login --direct</code> to authorize with Schwab. Token goes to your macOS keychain.</p>
+                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies auth login --direct</code> to authorize with Schwab. Token goes to your macOS keychain.</p>
                 </div>
             </div>
             <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">

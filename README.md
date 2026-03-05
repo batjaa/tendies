@@ -45,7 +45,7 @@ Edit `~/.tendies/config.json` with the broker client ID you were given:
 ### Log in
 
 ```bash
-tendies login
+tendies auth login
 ```
 
 This opens your browser for OAuth login. After authorizing, you're redirected back and the token is saved to your macOS keychain.
@@ -98,12 +98,12 @@ Edit `~/.tendies/config.json`:
 ### Log in
 
 ```bash
-tendies login --direct
+tendies auth login --direct
 ```
 
 This prints a URL to open in your browser. After authorizing with Schwab, paste the full callback URL back into the terminal. The token is saved to your macOS keychain.
 
-> Schwab refresh tokens expire after 7 days. Re-run `tendies login --direct` when they expire.
+> Schwab refresh tokens expire after 7 days. Re-run `tendies auth login --direct` when they expire.
 
 ### Usage
 
@@ -125,7 +125,8 @@ tendies accounts --direct --refresh-details   # force refresh cached names
 | Command | Description |
 |---|---|
 | `tendies` | Calculate and print realized P&L |
-| `tendies login` | Authenticate via OAuth |
+| `tendies auth login` | Authenticate via OAuth |
+| `tendies auth logout` | Remove saved token from keychain |
 | `tendies accounts` | List accounts (number/hash/name/selected) |
 | `tendies version` | Print version |
 
@@ -239,13 +240,13 @@ Edit `~/.tendies/config.json` (override the default broker URL to point at your 
 ### E2E Flow
 
 1. Start the backend: `cd backend && php artisan serve`
-2. Log in: `tendies login` — opens browser, completes OAuth, saves token to keychain
+2. Log in: `tendies auth login` — opens browser, completes OAuth, saves token to keychain
 3. Fetch P&L: `tendies --day`
 
 For direct mode (no backend needed):
 
 1. Configure Schwab credentials in `~/.tendies/config.json`
-2. Log in: `tendies login --direct` — paste callback URL
+2. Log in: `tendies auth login --direct` — paste callback URL
 3. Fetch P&L: `tendies --direct --day`
 
 ### Backend API Routes
@@ -291,7 +292,7 @@ Set `broker_client_id` in `~/.tendies/config.json`, or use `--direct` for direct
 Set `client_id` and `client_secret` in `~/.tendies/config.json` (direct mode only).
 
 **"no broker token in keychain"** / **"no OAuth token in keychain"**
-Run `tendies login` (broker) or `tendies login --direct` (direct mode).
+Run `tendies auth login` (broker) or `tendies auth login --direct` (direct mode).
 
 **OAuth state mismatch**
 Retry the login — caused by browser back/forward during auth or an expired session.
@@ -300,4 +301,4 @@ Retry the login — caused by browser back/forward during auth or an expired ses
 Grant access when prompted, or check System Settings > Privacy & Security.
 
 **Schwab token refresh failed**
-Schwab refresh tokens expire after 7 days. Re-run `tendies login` or `tendies login --direct`.
+Schwab refresh tokens expire after 7 days. Re-run `tendies auth login` or `tendies auth login --direct`.

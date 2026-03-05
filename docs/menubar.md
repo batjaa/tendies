@@ -257,7 +257,7 @@ If the user has a drill-down expanded and the refresh completes:
 │                                       │
 │  Run in Terminal:                     │
 │  ┌─────────────────────────────────┐  │
-│  │ tendies login                   │  │
+│  │ tendies auth login                   │  │
 │  └─────────────────────────────────┘  │
 │         ⎘ Copy Command                │
 │                                       │
@@ -269,7 +269,7 @@ If the user has a drill-down expanded and the refresh completes:
 └───────────────────────────────────────┘
 ```
 
-- The `Copy Command` button copies `tendies login` to clipboard
+- The `Copy Command` button copies `tendies auth login` to clipboard
 - After re-auth, clicking ↻ refresh recovers automatically
 
 ### 2.9 Error State — Schwab Token Expired
@@ -286,7 +286,7 @@ Distinct from broker auth — this occurs when the underlying Schwab refresh tok
 │  Your Schwab token has expired.       │
 │  Re-authenticate in Terminal:         │
 │  ┌─────────────────────────────────┐  │
-│  │ tendies login                   │  │
+│  │ tendies auth login                   │  │
 │  └─────────────────────────────────┘  │
 │         ⎘ Copy Command                │
 │                                       │
@@ -742,7 +742,7 @@ On `exit 1`, stderr contains a JSON error object so the app can differentiate er
 ```json
 {
   "error": "schwab_token_expired",
-  "message": "Schwab refresh token expired — run `tendies login` to re-authenticate"
+  "message": "Schwab refresh token expired — run `tendies auth login` to re-authenticate"
 }
 ```
 

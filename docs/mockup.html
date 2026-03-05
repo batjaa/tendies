@@ -472,6 +472,52 @@
     min-width: 40px;
   }
 
+  .ticker-symbol-option {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+    display: inline-flex;
+    gap: 0;
+  }
+
+  .opt-underlying {
+    display: inline-block;
+    min-width: 4.2ch;
+  }
+
+  .opt-expiry {
+    display: inline-block;
+    min-width: 5.5ch;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .opt-strike {
+    display: inline-block;
+    min-width: 4.5ch;
+    text-align: right;
+  }
+
+  .opt-type {
+    display: inline-block;
+    width: 1.2ch;
+  }
+
+  /* Option exec labels (BTO/STC/BTC/STO) */
+  .exec-side.bto { color: var(--green); opacity: 0.7; }
+  .exec-side.stc { color: var(--red); opacity: 0.7; }
+  .exec-side.btc { color: var(--green); opacity: 0.7; }
+  .exec-side.sto { color: var(--red); opacity: 0.7; }
+
+  .exec-qty-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-tertiary);
+    opacity: 0.7;
+  }
+
   /* === Execution Drill-Down === */
   .exec-list {
     background: rgba(255,255,255,0.015);
@@ -928,6 +974,13 @@
   .light .ticker-pnl.negative { color: var(--light-red); }
   .light .ticker-count { color: var(--light-text-tertiary); }
 
+  .light .ticker-symbol-option { color: var(--light-text-primary); }
+  .light .opt-expiry { color: var(--light-text-secondary); }
+  .light .exec-side.bto { color: var(--light-green); }
+  .light .exec-side.stc { color: var(--light-red); }
+  .light .exec-side.btc { color: var(--light-green); }
+  .light .exec-side.sto { color: var(--light-red); }
+
   .light .exec-list { background: rgba(0,0,0,0.015); border-left-color: var(--light-separator); }
   .light .exec-detail { color: var(--light-text-tertiary); }
   .light .exec-side.buy { color: var(--light-green); }
@@ -1042,6 +1095,15 @@ const mockTickers = {
       { time: '9:47', side: 'SELL', qty: 50, price: 385.10, pnl: 132.50 },
       { time: '10:15', side: 'SELL', qty: 50, price: 397.68, pnl: 759.80 },
     ]},
+    { symbol: 'AAPL', type: 'option', expiry: '03/14', strike: '$250', optType: 'C', pnl: 340.00, count: 4, execs: [
+      { time: '9:45', side: 'BTO', qty: 5, price: 3.20, pnl: null },
+      { time: '10:08', side: 'STC', qty: 3, price: 3.85, pnl: 195.00 },
+      { time: '10:52', side: 'STC', qty: 2, price: 3.925, pnl: 145.00 },
+    ]},
+    { symbol: 'SPY', type: 'option', expiry: '03/07', strike: '$570', optType: 'P', pnl: -180.00, count: 2, execs: [
+      { time: '11:30', side: 'BTO', qty: 10, price: 1.45, pnl: null },
+      { time: '12:15', side: 'STC', qty: 10, price: 1.27, pnl: -180.00 },
+    ]},
     { symbol: 'META', pnl: 567.26, count: 3, execs: [
       { time: '10:02', side: 'BUY', qty: 50, price: 612.30, pnl: null },
       { time: '10:34', side: 'SELL', qty: 50, price: 623.64, pnl: 567.26 },
@@ -1053,20 +1115,27 @@ const mockTickers = {
   ],
   Week: [
     { symbol: 'HD', pnl: 2140.50, count: 18 },
+    { symbol: 'AAPL', type: 'option', expiry: '03/14', strike: '$250', optType: 'C', pnl: 680.00, count: 8 },
     { symbol: 'META', pnl: 1567.28, count: 12 },
+    { symbol: 'NVDA', type: 'option', expiry: '03/21', strike: '$140', optType: 'C', pnl: -420.00, count: 4 },
     { symbol: 'NVDA', pnl: -892.00, count: 8 },
     { symbol: 'MU', pnl: 641.00, count: 7 },
+    { symbol: 'SPY', type: 'option', expiry: '03/07', strike: '$570', optType: 'P', pnl: -260.50, count: 6 },
   ],
   Month: [
     { symbol: 'HD', pnl: -1250.00, count: 42 },
     { symbol: 'META', pnl: 3200.80, count: 28 },
+    { symbol: 'AAPL', type: 'option', expiry: '02/21', strike: '$240', optType: 'C', pnl: 1540.00, count: 14 },
     { symbol: 'NVDA', pnl: -4892.00, count: 18 },
+    { symbol: 'SPY', type: 'option', expiry: '03/14', strike: '$565', optType: 'P', pnl: -890.00, count: 12 },
     { symbol: 'MU', pnl: 841.20, count: 10 },
   ],
   Year: [
     { symbol: 'HD', pnl: 8920.50, count: 124 },
     { symbol: 'META', pnl: 4567.40, count: 88 },
+    { symbol: 'AAPL', type: 'option', expiry: '03/14', strike: '$250', optType: 'C', pnl: 3240.00, count: 62 },
     { symbol: 'NVDA', pnl: 1234.00, count: 56 },
+    { symbol: 'SPY', type: 'option', expiry: '03/07', strike: '$570', optType: 'P', pnl: -1870.00, count: 38 },
     { symbol: 'MU', pnl: 957.00, count: 44 },
   ],
 };
@@ -1155,21 +1224,29 @@ function makeTimeframeRows(data, expandedTf = null, expandedTicker = null) {
     if (isExpanded && mockTickers[tf.label]) {
       html += `<div class="ticker-list">`;
       mockTickers[tf.label].forEach(tk => {
-        const tkExpanded = tk.symbol === expandedTicker;
+        const isOption = tk.type === 'option';
+        const tkKey = isOption ? `${tk.symbol} ${tk.expiry} ${tk.strike}${tk.optType}` : tk.symbol;
+        const tkExpanded2 = tkKey === expandedTicker;
+        const symbolHtml = isOption
+          ? `<span class="ticker-symbol-option"><span class="opt-underlying">${tk.symbol}</span> <span class="opt-expiry">${tk.expiry}</span> <span class="opt-strike">${tk.strike}</span><span class="opt-type">${tk.optType}</span></span>`
+          : `<span class="ticker-symbol">${tk.symbol}</span>`;
         html += `
-          <div class="ticker-row ${tkExpanded ? 'expanded' : ''}" onclick="event.stopPropagation(); toggleTicker('${tf.label}', '${tk.symbol}')">
+          <div class="ticker-row ${tkExpanded2 ? 'expanded' : ''}" onclick="event.stopPropagation(); toggleTicker('${tf.label}', '${tkKey}')">
             <span class="ticker-chevron">${tk.execs ? '&#9654;' : ''}</span>
-            <span class="ticker-symbol">${tk.symbol}</span>
+            ${symbolHtml}
             <span class="ticker-pnl ${pnlClass(tk.pnl)}">${fmtPnl(tk.pnl)}</span>
             <span class="ticker-count">${tk.count} exe</span>
           </div>`;
-        if (tkExpanded && tk.execs) {
+        if (tkExpanded2 && tk.execs) {
           html += `<div class="exec-list">`;
           tk.execs.forEach(ex => {
+            const sideClass = ex.side.toLowerCase().replace('_', '');
+            const qtyLabel = isOption ? `${ex.qty}x` : `${ex.qty}sh`;
+            const priceLabel = isOption ? `$${ex.price.toFixed(2)}` : `$${ex.price.toFixed(2)}`;
             html += `
               <div class="exec-row">
-                <span class="exec-detail">${ex.time} &middot; ${ex.qty}sh @ $${ex.price.toFixed(2)}</span>
-                <span class="exec-side ${ex.side.toLowerCase()}">${ex.side}</span>
+                <span class="exec-detail">${ex.time} &middot; ${qtyLabel} @ ${priceLabel}</span>
+                <span class="exec-side ${sideClass}">${ex.side}</span>
                 <span class="exec-pnl ${ex.pnl === null ? 'neutral' : pnlClass(ex.pnl)}">${ex.pnl === null ? '—' : fmtPnl(ex.pnl)}</span>
               </div>`;
           });
@@ -1184,10 +1261,10 @@ function makeTimeframeRows(data, expandedTf = null, expandedTicker = null) {
 }
 
 const timeframeData = [
-  { label: 'Day', net: 1234.56, trades: 12 },
-  { label: 'Week', net: 3456.78, trades: 45 },
-  { label: 'Month', net: -2100.00, trades: 98 },
-  { label: 'Year', net: 15678.90, trades: 312 },
+  { label: 'Day', net: 1394.56, trades: 15 },
+  { label: 'Week', net: 3456.78, trades: 63 },
+  { label: 'Month', net: -1450.00, trades: 124 },
+  { label: 'Year', net: 17049.90, trades: 412 },
 ];
 
 const zeroData = [
@@ -1275,8 +1352,8 @@ function getStateContent(state) {
               <span class="error-title">Authentication expired</span>
             </div>
             <div class="error-body">Run this command in Terminal to re-authenticate:</div>
-            <div class="error-command-box">tendies login</div>
-            <button class="error-copy-btn" onclick="copyText('tendies login', this)">&#x2398; Copy Command</button>
+            <div class="error-command-box">tendies auth login</div>
+            <button class="error-copy-btn" onclick="copyText('tendies auth login', this)">&#x2398; Copy Command</button>
             <div class="error-hint">After logging in, click refresh to reload your data.</div>
           </div>` + makeFooter('', '')
       };
@@ -1393,7 +1470,7 @@ function setState(state) {
   if (state === 'drilldown') {
     // Force open Day > HD if nothing expanded
     if (!expandedTimeframe) expandedTimeframe = 'Day';
-    if (!expandedTicker) expandedTicker = 'HD';
+    if (!expandedTicker) expandedTicker = 'AAPL 03/14 $250C';
   }
   renderCurrentState();
   document.querySelectorAll('.state-btn').forEach(btn => {

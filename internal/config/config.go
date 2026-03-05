@@ -158,6 +158,11 @@ func DeleteToken() error {
 	return keyring.Delete(ServiceName, "oauth_token")
 }
 
+// DeleteBrokerToken removes the broker (Passport) token from the keychain
+func DeleteBrokerToken() error {
+	return keyring.Delete(ServiceName, "broker_token")
+}
+
 // SaveBrokerToken stores the broker (Passport) token in the system keychain
 func SaveBrokerToken(token *BrokerToken) error {
 	data, err := json.Marshal(token)
