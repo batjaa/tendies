@@ -18,6 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
+        $middleware->alias([
+            'subscribed' => \App\Http\Middleware\EnsureSubscribed::class,
+        ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+        ]);
+
         // Auto-login from cache when returning to /oauth/authorize after Schwab callback.
         // This avoids depending on session cookies surviving the cross-site redirect.
         $middleware->appendToGroup('web', \App\Http\Middleware\AutoLoginFromCache::class);

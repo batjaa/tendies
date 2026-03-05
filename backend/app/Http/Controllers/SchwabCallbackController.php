@@ -50,6 +50,11 @@ class SchwabCallbackController extends Controller
             ]
         );
 
+        if ($user->wasRecentlyCreated) {
+            $user->trial_ends_at = now()->addDays(7);
+            $user->save();
+        }
+
         $schwab->storeTokens($user, $tokenData);
 
         Auth::login($user);

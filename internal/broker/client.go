@@ -26,6 +26,15 @@ const (
 	retryBaseDelay = 1 * time.Second
 )
 
+// SubscriptionError indicates the user's subscription/trial has expired.
+type SubscriptionError struct {
+	Message string
+}
+
+func (e *SubscriptionError) Error() string {
+	return e.Message
+}
+
 // Client talks to the tendies broker backend and implements datasource.DataSource.
 type Client struct {
 	BrokerURL    string
@@ -285,6 +294,16 @@ func (c *Client) doGet(ctx context.Context, path string, query url.Values) ([]by
 		}
 
 		// Don't retry 4xx.
+		if resp.StatusCode == http.StatusForbidden {
+			var errResp struct {
+				Error   string `json:"error"`
+				Message string `json:"message"`
+			}
+			if json.Unmarshal(body, &errResp) == nil && errResp.Error == "subscription_required" {
+				return nil, &SubscriptionError{Message: errResp.Message}
+			}
+		}
+
 		if resp.StatusCode == http.StatusUnauthorized {
 			var errResp struct {
 				Error   string `json:"error"`

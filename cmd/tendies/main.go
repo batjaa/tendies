@@ -1379,6 +1379,11 @@ func writeJSONError(err error) {
 }
 
 func classifyError(err error) (string, string) {
+	var subErr *broker.SubscriptionError
+	if errors.As(err, &subErr) {
+		return "subscription_required", subErr.Message
+	}
+
 	msg := err.Error()
 	msgLower := strings.ToLower(msg)
 	switch {
