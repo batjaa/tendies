@@ -125,10 +125,38 @@ class TransactionTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_cache_ttl_5_min_for_today(): void
+    public function test_cache_short_ttl_when_range_covers_today(): void
     {
         Http::fake([
-            'api.schwabapi.com/trader/v1/*' => Http::response([]),
+            'api.schwabapi.com/trader/v1/*' => Http::response([['type' => 'TRADE']]),
+        ]);
+
+        $user = $this->actingAsTrialUser();
+
+        // CLI sends RFC3339 timestamps: today midnight..tomorrow midnight (day-aligned)
+        $start = now()->startOfDay()->toRfc3339String();
+        $end = now()->addDay()->startOfDay()->toRfc3339String();
+
+        $params = http_build_query([
+            'account_hash' => 'hash123',
+            'start' => $start,
+            'end' => $end,
+        ]);
+
+        $this->getJson("/api/v1/transactions?{$params}")->assertOk();
+
+        $cacheKey = "schwab_txns:{$user->id}:hash123:{$start}:{$end}:";
+        $this->assertTrue(Cache::has($cacheKey));
+
+        // After 31 seconds the short TTL should have expired
+        $this->travel(31)->seconds();
+        $this->assertFalse(Cache::has($cacheKey));
+    }
+
+    public function test_cache_long_ttl_for_past_dates(): void
+    {
+        Http::fake([
+            'api.schwabapi.com/trader/v1/*' => Http::response([['type' => 'TRADE']]),
         ]);
 
         $user = $this->actingAsTrialUser();
@@ -136,12 +164,16 @@ class TransactionTest extends TestCase
         $params = http_build_query([
             'account_hash' => 'hash123',
             'start' => '2026-01-01',
-            'end' => now()->toDateString(),
+            'end' => '2026-01-02',
         ]);
 
         $this->getJson("/api/v1/transactions?{$params}")->assertOk();
 
-        $cacheKey = "schwab_txns:{$user->id}:hash123:2026-01-01:" . now()->toDateString() . ':';
+        $cacheKey = "schwab_txns:{$user->id}:hash123:2026-01-01:2026-01-02:";
+        $this->assertTrue(Cache::has($cacheKey));
+
+        // Should still be cached after 31 seconds (7-day TTL)
+        $this->travel(31)->seconds();
         $this->assertTrue(Cache::has($cacheKey));
     }
 
