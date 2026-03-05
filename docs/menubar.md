@@ -808,14 +808,14 @@ Add `--json` output to `cmd/tendies/main.go` with the contract above. Includes p
   - [ ] Mode: picker (Broker/Direct), passed as `--direct`
   - [ ] Launch at Login: toggle via `SMAppService` (macOS 13+)
   - [ ] Persistence: `@AppStorage` (UserDefaults) for all settings
-- [ ] **3.3 Keyboard shortcuts**
-  - [ ] `⌘R` → refresh
-  - [ ] `⌘Q` → quit
-  - [ ] `⌘,` → open settings
-  - [ ] `Esc` → close popover
-- [ ] **3.4 Sleep/wake handling**
-  - [ ] `NSWorkspace.willSleepNotification` → pause timer
-  - [ ] `NSWorkspace.didWakeNotification` → immediate refresh + restart timer
+- [x] **3.3 Keyboard shortcuts**
+  - [x] `⌘R` → refresh
+  - [x] `⌘Q` → quit
+  - [x] `⌘,` → open settings
+  - [x] `Esc` → close popover
+- [x] **3.4 Sleep/wake handling**
+  - [x] `NSWorkspace.willSleepNotification` → pause timer
+  - [x] `NSWorkspace.didWakeNotification` → immediate refresh + restart timer
 - [ ] **3.5 Consecutive error backoff**
   - [ ] Track `consecutiveErrors` count in AppState
   - [ ] After 3 consecutive errors, switch to error state
