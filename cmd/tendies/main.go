@@ -1002,17 +1002,28 @@ func selectAccounts(accounts []schwab.AccountNumber, configAccounts []string, ov
 		if acct, ok := byNumber[id]; ok {
 			return acct.HashValue, nil
 		}
+		// Match display labels like "...123" by account number suffix.
+		if strings.HasPrefix(id, "...") {
+			suffix := strings.TrimPrefix(id, "...")
+			for num, acct := range byNumber {
+				if strings.HasSuffix(num, suffix) {
+					return acct.HashValue, nil
+				}
+			}
+		}
 		return "", fmt.Errorf("account not found: %s", id)
 	}
 
 	var ids []string
 	switch {
 	case strings.TrimSpace(override) != "":
-		resolved, err := resolve(override)
-		if err != nil {
-			return nil, err
+		for _, part := range strings.Split(override, ",") {
+			resolved, err := resolve(part)
+			if err != nil {
+				return nil, err
+			}
+			ids = append(ids, resolved)
 		}
-		ids = append(ids, resolved)
 	case len(configAccounts) > 0:
 		for _, id := range configAccounts {
 			resolved, err := resolve(id)

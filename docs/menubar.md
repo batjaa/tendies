@@ -780,28 +780,51 @@ On `exit 1`, stderr contains a JSON error object so the app can differentiate er
 
 ## 8. Implementation Phases
 
-### Phase 1: `--json` flag (Go CLI)
+### Phase 1: `--json` flag (Go CLI) — DONE
 Add `--json` output to `cmd/tendies/main.go` with the contract above. Includes per-ticker grouping, structured option fields, and FIFO-matched execution detail. Error JSON on stderr.
 
-### Phase 2: Core menu bar app (Swift)
-- Menu bar label with P&L (including weekend fallback)
-- Popover with loading skeletons → loaded state
-- Account selector chips (horizontal scroll, re-fetch on toggle)
-- Timeframe → ticker drill-down (accordion)
-- Auto-refresh on timer
-- Manual refresh button
-- Error states (broker auth, Schwab token, binary not found, generic)
-- Quit button
+### Phase 2: Core menu bar app (Swift) — DONE
+- [x] Menu bar label with P&L (including weekend fallback, K/M abbreviation)
+- [x] Popover with loading skeletons → loaded state
+- [x] Account selector chips (horizontal scroll, re-fetch on toggle)
+- [x] Timeframe → ticker drill-down (accordion)
+- [x] Auto-refresh on timer
+- [x] Manual refresh button
+- [x] Error states (broker auth, Schwab token, binary not found, subscription, timeout, generic)
+- [x] Login view with OAuth PKCE
+- [x] Subscription/trial paywall
+- [x] Quit button
 
 ### Phase 3: Execution drill-down & Settings
-- Ticker → execution drill-down (grouped by close, matched opens)
-- Settings panel (timeframe checkboxes, menu bar timeframe, ticker sort, symbol filter, refresh interval, CLI path editable on click, mode, launch at login toggle)
-- Keyboard shortcuts
+
+- [x] **3.1 Execution drill-down** — chronological list, merged opens, colored side labels (uncommitted)
+- [ ] **3.2 Settings panel** — replace placeholder with full settings view
+  - [ ] Timeframes: checkbox group (Day/Week/Month), at least one checked
+  - [ ] Menu Bar Timeframe: picker (Day/Week/Month)
+  - [ ] Ticker Sort: picker (A-Z / P&L desc)
+  - [ ] Symbols: text field, comma-separated, passed as `--symbol`
+  - [ ] Refresh Interval: picker (1/2/5/10/30 min), restart timer on change
+  - [ ] CLI Path: text display, editable on click, overrides auto-detection
+  - [ ] Mode: picker (Broker/Direct), passed as `--direct`
+  - [ ] Launch at Login: toggle via `SMAppService` (macOS 13+)
+  - [ ] Persistence: `@AppStorage` (UserDefaults) for all settings
+- [ ] **3.3 Keyboard shortcuts**
+  - [ ] `⌘R` → refresh
+  - [ ] `⌘Q` → quit
+  - [ ] `⌘,` → open settings
+  - [ ] `Esc` → close popover
+- [ ] **3.4 Sleep/wake handling**
+  - [ ] `NSWorkspace.willSleepNotification` → pause timer
+  - [ ] `NSWorkspace.didWakeNotification` → immediate refresh + restart timer
+- [ ] **3.5 Consecutive error backoff**
+  - [ ] Track `consecutiveErrors` count in AppState
+  - [ ] After 3 consecutive errors, switch to error state
+  - [ ] Manual refresh resets counter
 
 ### Phase 4: Distribution
-- Xcode archive + notarization
-- Homebrew cask or DMG download
-- Auto-update mechanism (Sparkle framework or manual check)
+- [ ] **4.1 Code signing & notarization** — Xcode archive, Developer ID, `notarytool`, staple
+- [ ] **4.2 Homebrew cask** — formula in `batjaa/homebrew-tap`, GitHub Release .zip asset
+- [ ] **4.3 Auto-update** (stretch) — Sparkle or manual GitHub releases check
 
 ---
 
