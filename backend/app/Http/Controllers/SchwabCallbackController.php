@@ -38,17 +38,33 @@ class SchwabCallbackController extends Controller
 
         $tokenData = $schwab->exchangeCode($code);
 
-        // Create or find user by Schwab identity.
-        // Schwab doesn't provide a user ID in the token response,
-        // so we use a hash of the refresh token as a stable identifier.
-        $schwabId = hash('sha256', $tokenData['refresh_token']);
-        $user = User::firstOrCreate(
-            ['email' => $schwabId . '@schwab.local'],
-            [
-                'name' => 'Schwab User',
-                'password' => bcrypt(Str::random(32)),
-            ]
-        );
+        // Derive a stable identity from Schwab account hashes (survives token rotation).
+        $accountHash = $schwab->fetchAccountHash($tokenData['access_token']);
+
+        // Look up by stable account hash first.
+        $user = User::where('schwab_account_hash', $accountHash)->first();
+
+        if (! $user) {
+            // Adopt a legacy user (created before account-hash identity) if one exists.
+            // Legacy users have @schwab.local emails and null schwab_account_hash.
+            $user = User::whereNull('schwab_account_hash')
+                ->where('email', 'like', '%@schwab.local')
+                ->whereHas('schwabToken')
+                ->latest('id')
+                ->first();
+
+            if ($user) {
+                // Claim this legacy user with the stable account hash.
+                $user->update(['schwab_account_hash' => $accountHash]);
+            } else {
+                $user = User::create([
+                    'name' => 'Schwab User',
+                    'email' => $accountHash . '@schwab.local',
+                    'password' => bcrypt(Str::random(32)),
+                    'schwab_account_hash' => $accountHash,
+                ]);
+            }
+        }
 
         if (! $user->trial_ends_at && ! $user->subscribed('default')) {
             $user->trial_ends_at = now()->addDays(7);

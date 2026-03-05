@@ -101,4 +101,28 @@ class SchwabService
 
         return $response->json();
     }
+
+    /**
+     * Fetch account hashes from Schwab using a raw access token.
+     * Returns a stable composite hash derived from sorted account hashValues.
+     */
+    public function fetchAccountHash(string $accessToken): string
+    {
+        $url = config('schwab.api_base_url') . '/accounts/accountNumbers';
+
+        $response = Http::withToken($accessToken)->get($url);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Failed to fetch Schwab account numbers (HTTP ' . $response->status() . ')');
+        }
+
+        $accounts = $response->json();
+        $hashes = collect($accounts)->pluck('hashValue')->sort()->values()->all();
+
+        if (empty($hashes)) {
+            throw new \RuntimeException('No Schwab accounts found');
+        }
+
+        return hash('sha256', implode(':', $hashes));
+    }
 }
