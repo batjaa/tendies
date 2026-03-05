@@ -420,6 +420,7 @@ func parseTrades(txns []Transaction) []parsedTrade {
 type JSONOutput struct {
 	Timeframes []JSONTimeframe `json:"timeframes"`
 	Accounts   []string        `json:"accounts"`
+	AccountIDs []string        `json:"account_ids"`
 	Warnings   []string        `json:"warnings"`
 	UpdatedAt  string          `json:"updated_at"`
 }

@@ -343,7 +343,7 @@ func runPnL(opts *cliOptions) error {
 	}
 
 	if opts.jsonOutput {
-		return outputJSON(results, selectedLabels, warnings, time.Now())
+		return outputJSON(results, selectedLabels, selected, warnings, time.Now())
 	}
 
 	printSummary(results, selectedLabels, time.Now().Location())
@@ -1225,8 +1225,8 @@ func redacted(s string) string {
 
 // JSON output functions
 
-func outputJSON(results []timeframeResult, accounts []string, warnings []string, now time.Time) error {
-	output := buildJSONOutput(results, accounts, warnings, now)
+func outputJSON(results []timeframeResult, accounts []string, accountIDs []string, warnings []string, now time.Time) error {
+	output := buildJSONOutput(results, accounts, accountIDs, warnings, now)
 	data, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON output: %w", err)
@@ -1239,17 +1239,21 @@ func outputJSON(results []timeframeResult, accounts []string, warnings []string,
 	return nil
 }
 
-func buildJSONOutput(results []timeframeResult, accounts []string, warnings []string, now time.Time) *schwab.JSONOutput {
+func buildJSONOutput(results []timeframeResult, accounts []string, accountIDs []string, warnings []string, now time.Time) *schwab.JSONOutput {
 	output := &schwab.JSONOutput{
-		Accounts:  accounts,
-		Warnings:  uniqueStrings(warnings),
-		UpdatedAt: now.Format(time.RFC3339),
+		Accounts:   accounts,
+		AccountIDs: accountIDs,
+		Warnings:   uniqueStrings(warnings),
+		UpdatedAt:  now.Format(time.RFC3339),
 	}
 	if output.Warnings == nil {
 		output.Warnings = []string{}
 	}
 	if output.Accounts == nil {
 		output.Accounts = []string{}
+	}
+	if output.AccountIDs == nil {
+		output.AccountIDs = []string{}
 	}
 
 	for _, r := range results {
