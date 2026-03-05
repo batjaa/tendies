@@ -153,6 +153,38 @@ class TransactionTest extends TestCase
         $this->assertFalse(Cache::has($cacheKey));
     }
 
+    public function test_cache_short_ttl_when_cli_sends_pst_timestamps_to_utc_server(): void
+    {
+        Http::fake([
+            'api.schwabapi.com/trader/v1/*' => Http::response([['type' => 'TRADE']]),
+        ]);
+
+        $user = $this->actingAsTrialUser();
+
+        // Simulate: CLI in PST sends today/tomorrow at -08:00, server runs UTC.
+        // This is the exact scenario that was broken — Carbon::today() (UTC midnight)
+        // was before Carbon::parse(start)->startOfDay() (PST midnight = UTC 08:00).
+        $today = now()->format('Y-m-d');
+        $tomorrow = now()->addDay()->format('Y-m-d');
+        $start = "{$today}T00:00:00-08:00";
+        $end = "{$tomorrow}T00:00:00-08:00";
+
+        $params = http_build_query([
+            'account_hash' => 'hash123',
+            'start' => $start,
+            'end' => $end,
+        ]);
+
+        $this->getJson("/api/v1/transactions?{$params}")->assertOk();
+
+        $cacheKey = "schwab_txns:{$user->id}:hash123:{$start}:{$end}:";
+        $this->assertTrue(Cache::has($cacheKey));
+
+        // Must expire after 31s (not 7 days)
+        $this->travel(31)->seconds();
+        $this->assertFalse(Cache::has($cacheKey));
+    }
+
     public function test_cache_long_ttl_for_past_dates(): void
     {
         Http::fake([

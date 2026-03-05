@@ -34,8 +34,9 @@ class TransactionController extends Controller
         $types = $request->input('types', '');
 
         $cacheKey = "schwab_txns:{$request->user()->id}:{$accountHash}:{$start}:{$end}:{$types}";
-        $parsedEnd = Carbon::parse($end);
-        $coversToday = Carbon::today()->between(Carbon::parse($start)->startOfDay(), $parsedEnd);
+        $todayDate = now()->format('Y-m-d');
+        $coversToday = Carbon::parse($start)->format('Y-m-d') <= $todayDate
+            && Carbon::parse($end)->format('Y-m-d') >= $todayDate;
         $ttl = $coversToday ? now()->addSeconds(30) : now()->addDays(7);
 
         $transactions = Cache::remember($cacheKey, $ttl, function () use ($schwab, $request, $path, $query) {
