@@ -41,4 +41,25 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    public function withSchwabHash(?string $hash = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'schwab_account_hash' => $hash ?? hash('sha256', fake()->uuid()),
+        ]);
+    }
+
+    public function onTrial(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'trial_ends_at' => now()->addDays(7),
+        ]);
+    }
+
+    public function trialExpired(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'trial_ends_at' => now()->subDay(),
+        ]);
+    }
 }
