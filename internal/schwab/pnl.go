@@ -12,15 +12,16 @@ import (
 
 // ClosedTrade represents a completed round-trip trade with realized P&L
 type ClosedTrade struct {
-	ActivityID      int64
-	Symbol          string
-	CloseTime       time.Time
-	Quantity        float64
-	OpenCash        float64 // cash flow from opening (negative for longs, positive for shorts)
-	CloseCash       float64 // cash flow from closing (positive for longs, negative for shorts)
-	RealizedPnL     float64
-	ClosePrice      float64
-	MatchedOpenings []MatchedOpening
+	ActivityID       int64
+	Symbol           string
+	CloseTime        time.Time
+	Quantity         float64
+	OpenCash         float64 // cash flow from opening (negative for longs, positive for shorts)
+	CloseCash        float64 // cash flow from closing (positive for longs, negative for shorts)
+	RealizedPnL      float64
+	ClosePrice       float64
+	CloseInstruction string // e.g. "SELL", "BUY_TO_CLOSE"
+	MatchedOpenings  []MatchedOpening
 }
 
 // MatchedOpening captures an opening lot used to realize a closing trade.
@@ -31,6 +32,7 @@ type MatchedOpening struct {
 	OpenCash        float64
 	OpenCashPerUnit float64
 	OpenPrice       float64
+	OpenInstruction string // e.g. "BUY", "SELL_TO_OPEN"
 }
 
 // PnLSummary contains realized P&L for a time period
@@ -53,7 +55,30 @@ type parsedTrade struct {
 	netAmount      float64 // total cash flow including fees (sign preserved)
 	price          float64 // per-unit execution price
 	positionEffect string  // "OPENING" or "CLOSING"
+	assetType      string  // "EQUITY" or "OPTION"
 	inRange        bool    // true if this trade is in the target date range
+}
+
+// instruction returns the full trade instruction (e.g. "BUY", "SELL_TO_CLOSE")
+// derived from positionEffect, netAmount sign, and asset type.
+func (t *parsedTrade) instruction() string {
+	isBuy := t.netAmount < 0 // negative cash = buying
+	if t.assetType == "OPTION" {
+		if t.positionEffect == "OPENING" {
+			if isBuy {
+				return "BUY_TO_OPEN"
+			}
+			return "SELL_TO_OPEN"
+		}
+		if isBuy {
+			return "BUY_TO_CLOSE"
+		}
+		return "SELL_TO_CLOSE"
+	}
+	if isBuy {
+		return "BUY"
+	}
+	return "SELL"
 }
 
 // groupKey returns the key for grouping trades by symbol.
@@ -68,11 +93,12 @@ func (t *parsedTrade) groupKey() string {
 
 // lot represents an open lot in the FIFO inventory
 type lot struct {
-	openActivityID int64
-	openTime       time.Time
-	cashPerUnit    float64
-	qtyRemain      float64
-	price          float64
+	openActivityID  int64
+	openTime        time.Time
+	cashPerUnit     float64
+	qtyRemain       float64
+	price           float64
+	openInstruction string
 }
 
 // TransactionFetcher abstracts the data source for account and transaction data.
@@ -230,11 +256,12 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 		key := t.groupKey()
 		if t.positionEffect == "OPENING" {
 			inventory[key] = append(inventory[key], lot{
-				openActivityID: t.activityID,
-				openTime:       t.time,
-				cashPerUnit:    t.netAmount / t.qty,
-				qtyRemain:      t.qty,
-				price:          t.price,
+				openActivityID:  t.activityID,
+				openTime:        t.time,
+				cashPerUnit:     t.netAmount / t.qty,
+				qtyRemain:       t.qty,
+				price:           t.price,
+				openInstruction: t.instruction(),
 			})
 			continue
 		}
@@ -276,6 +303,7 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 				OpenCash:        lots[c.idx].cashPerUnit * matched,
 				OpenCashPerUnit: lots[c.idx].cashPerUnit,
 				OpenPrice:       lots[c.idx].price,
+				OpenInstruction: lots[c.idx].openInstruction,
 			})
 			lots[c.idx].qtyRemain -= matched
 			remaining -= matched
@@ -292,15 +320,16 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 		if t.inRange {
 			pnl := openCashTotal + t.netAmount
 			closedTrades = append(closedTrades, ClosedTrade{
-				ActivityID:      t.activityID,
-				Symbol:          t.symbol,
-				CloseTime:       t.time,
-				Quantity:        t.qty,
-				OpenCash:        openCashTotal,
-				CloseCash:       t.netAmount,
-				RealizedPnL:     pnl,
-				ClosePrice:      t.price,
-				MatchedOpenings: matchedOpenings,
+				ActivityID:       t.activityID,
+				Symbol:           t.symbol,
+				CloseTime:        t.time,
+				Quantity:         t.qty,
+				OpenCash:         openCashTotal,
+				CloseCash:        t.netAmount,
+				RealizedPnL:      pnl,
+				ClosePrice:       t.price,
+				CloseInstruction: t.instruction(),
+				MatchedOpenings:  matchedOpenings,
 			})
 		}
 	}
@@ -374,6 +403,7 @@ func parseTrades(txns []Transaction) []parsedTrade {
 				t.qty = math.Abs(item.Amount)
 				t.price = item.Price
 				t.positionEffect = item.PositionEffect
+				t.assetType = item.Instrument.AssetType
 			}
 		}
 
@@ -427,6 +457,7 @@ type JSONClose struct {
 
 type JSONMatchedOpen struct {
 	Time     string  `json:"time"`
+	Side     string  `json:"side"`
 	Quantity float64 `json:"quantity"`
 	Price    float64 `json:"price"`
 }

@@ -1307,7 +1307,7 @@ func buildJSONTickers(trades []schwab.ClosedTrade, includeCloses bool) []schwab.
 			for _, t := range data.trades {
 				c := schwab.JSONClose{
 					Time:     t.CloseTime.Format(time.RFC3339),
-					Side:     inferSide(t, ticker.Type),
+					Side:     t.CloseInstruction,
 					Quantity: t.Quantity,
 					Price:    t.ClosePrice,
 					PnL:      roundCents(t.RealizedPnL),
@@ -1315,6 +1315,7 @@ func buildJSONTickers(trades []schwab.ClosedTrade, includeCloses bool) []schwab.
 				for _, m := range t.MatchedOpenings {
 					c.MatchedOpens = append(c.MatchedOpens, schwab.JSONMatchedOpen{
 						Time:     m.OpenTime.Format(time.RFC3339),
+						Side:     m.OpenInstruction,
 						Quantity: m.Quantity,
 						Price:    m.OpenPrice,
 					})
@@ -1338,18 +1339,6 @@ func buildJSONTickers(trades []schwab.ClosedTrade, includeCloses bool) []schwab.
 	return tickers
 }
 
-func inferSide(t schwab.ClosedTrade, assetType string) string {
-	if assetType == "option" {
-		if t.CloseCash >= 0 {
-			return "SELL_TO_CLOSE"
-		}
-		return "BUY_TO_CLOSE"
-	}
-	if t.CloseCash >= 0 {
-		return "SELL"
-	}
-	return "BUY"
-}
 
 func formatOptionDisplay(underlying, expiry string, strike float64, optionType string) string {
 	t, err := time.Parse("2006-01-02", expiry)
