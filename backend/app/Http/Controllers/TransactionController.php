@@ -34,7 +34,7 @@ class TransactionController extends Controller
         $types = $request->input('types', '');
 
         $cacheKey = "schwab_txns:{$request->user()->id}:{$accountHash}:{$start}:{$end}:{$types}";
-        $ttl = Carbon::parse($end)->isToday() ? now()->addMinutes(5) : now()->addDays(7);
+        $ttl = Carbon::parse($end)->isToday() ? now()->addSeconds(30) : now()->addDays(7);
 
         $transactions = Cache::remember($cacheKey, $ttl, function () use ($schwab, $request, $path, $query) {
             return $schwab->makeRequest($request->user(), 'get', $path, $query);
