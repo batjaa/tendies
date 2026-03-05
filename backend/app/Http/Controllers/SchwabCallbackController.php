@@ -50,7 +50,7 @@ class SchwabCallbackController extends Controller
             ]
         );
 
-        if ($user->wasRecentlyCreated) {
+        if (! $user->trial_ends_at && ! $user->subscribed('default')) {
             $user->trial_ends_at = now()->addDays(7);
             $user->save();
         }
