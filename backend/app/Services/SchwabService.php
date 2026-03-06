@@ -94,8 +94,24 @@ class SchwabService
         $response = Http::withToken($accessToken)
             ->$method($url, $query);
 
+        // On 401, refresh the token once and retry before giving up.
+        if ($response->status() === 401) {
+            $schwabToken = $user->schwabToken;
+            if ($schwabToken) {
+                $tokenData = $this->refreshToken($schwabToken->encrypted_refresh_token);
+                $this->storeTokens($user, $tokenData);
+                $response = Http::withToken($tokenData['access_token'])
+                    ->$method($url, $query);
+            }
+        }
+
         if (! $response->successful()) {
             report("Schwab API error {$response->status()}: {$response->body()}");
+
+            if ($response->status() === 401) {
+                throw new SchwabAuthException("Schwab API request failed (HTTP 401)");
+            }
+
             throw new \RuntimeException("Schwab API request failed (HTTP {$response->status()})");
         }
 

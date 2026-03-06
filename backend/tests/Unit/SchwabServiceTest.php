@@ -192,7 +192,7 @@ class SchwabServiceTest extends TestCase
         });
     }
 
-    public function test_make_request_throws_on_api_failure(): void
+    public function test_make_request_throws_runtime_exception_on_5xx(): void
     {
         Http::fake([
             'api.schwabapi.com/trader/v1/*' => Http::response('error', 500),
@@ -205,6 +205,52 @@ class SchwabServiceTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Schwab API request failed');
+
+        $this->service->makeRequest($user, 'get', '/accounts/accountNumbers');
+    }
+
+    public function test_make_request_retries_once_on_401_then_succeeds(): void
+    {
+        Http::fakeSequence('api.schwabapi.com/trader/v1/accounts*')
+            ->push('unauthorized', 401)
+            ->push([['accountNumber' => '123']]);
+
+        Http::fake([
+            'api.schwabapi.com/v1/oauth/token' => Http::response([
+                'access_token' => 'refreshed-access',
+                'refresh_token' => 'refreshed-refresh',
+                'expires_in' => 1800,
+            ]),
+        ]);
+
+        $user = User::factory()->create();
+        SchwabToken::factory()->for($user)->create([
+            'token_expires_at' => now()->addMinutes(15),
+        ]);
+
+        $result = $this->service->makeRequest($user, 'get', '/accounts/accountNumbers');
+
+        $this->assertCount(1, $result);
+    }
+
+    public function test_make_request_throws_schwab_auth_exception_on_persistent_401(): void
+    {
+        Http::fake([
+            'api.schwabapi.com/trader/v1/*' => Http::response('unauthorized', 401),
+            'api.schwabapi.com/v1/oauth/token' => Http::response([
+                'access_token' => 'refreshed-access',
+                'refresh_token' => 'refreshed-refresh',
+                'expires_in' => 1800,
+            ]),
+        ]);
+
+        $user = User::factory()->create();
+        SchwabToken::factory()->for($user)->create([
+            'token_expires_at' => now()->addMinutes(15),
+        ]);
+
+        $this->expectException(SchwabAuthException::class);
+        $this->expectExceptionMessage('Schwab API request failed (HTTP 401)');
 
         $this->service->makeRequest($user, 'get', '/accounts/accountNumbers');
     }
