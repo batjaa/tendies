@@ -816,10 +816,10 @@ Add `--json` output to `cmd/tendies/main.go` with the contract above. Includes p
 - [x] **3.4 Sleep/wake handling**
   - [x] `NSWorkspace.willSleepNotification` → pause timer
   - [x] `NSWorkspace.didWakeNotification` → immediate refresh + restart timer
-- [ ] **3.5 Consecutive error backoff**
-  - [ ] Track `consecutiveErrors` count in AppState
-  - [ ] After 3 consecutive errors, switch to error state
-  - [ ] Manual refresh resets counter
+- [x] **3.5 Consecutive error backoff**
+  - [x] Track `consecutiveErrors` count in AppState
+  - [x] After 3 consecutive errors, stop auto-refresh
+  - [x] Manual refresh resets counter and restarts timer on success
 
 ### Phase 4: Distribution
 - [ ] **4.1 Code signing & notarization** — Xcode archive, Developer ID, `notarytool`, staple
