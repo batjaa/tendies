@@ -16,10 +16,10 @@ This file tracks remaining security hardening items before/after publish.
 - ~~Add retry with exponential backoff for transient failures (5xx, network errors).~~
 - ~~Thread `context.Context` through broker client call chain.~~
 
-3. Release hygiene and repo safety
-- Ensure temporary debug/probe scripts are excluded from release artifacts.
-- Keep `.tmp/` and any local diagnostic outputs out of source control.
+3. ~~Release hygiene and repo safety~~ ✅
+- ~~Ensure temporary debug/probe scripts are excluded from release artifacts.~~
+- ~~Keep `.tmp/` and any local diagnostic outputs out of source control.~~
 
-4. OAuth-only cleanup
-- Remove or archive internal cookie-based RGL auth path from production CLI surface.
-- If retained for local experiments, gate clearly behind non-production/dev-only boundaries.
+4. ~~OAuth-only cleanup~~ ✅
+- ~~Remove or archive internal cookie-based RGL auth path from production CLI surface.~~
+- ~~If retained for local experiments, gate clearly behind non-production/dev-only boundaries.~~
