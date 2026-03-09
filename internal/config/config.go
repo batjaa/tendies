@@ -15,7 +15,7 @@ const (
 	ServiceName      = "tendies"
 	ConfigDir        = ".tendies"
 	ConfigFile       = "config.json"
-	DefaultBrokerURL = "https://tendies.batjaa.site"
+	DefaultBrokerURL = "https://mytendies.app"
 )
 
 type Config struct {

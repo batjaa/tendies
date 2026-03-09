@@ -8,7 +8,7 @@
     <meta property="og:title" content="Tendies — Realized Schwab P&L">
     <meta property="og:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for Schwab.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://tendies.batjaa.site">
+    <meta property="og:url" content="https://mytendies.app">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍗</text></svg>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

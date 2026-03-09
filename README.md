@@ -40,7 +40,7 @@ Edit `~/.tendies/config.json` with the broker client ID you were given:
 }
 ```
 
-> The broker URL defaults to `https://tendies.batjaa.site`. Override with `broker_url` in the config if needed.
+> The broker URL defaults to `https://mytendies.app`. Override with `broker_url` in the config if needed.
 
 ### Log in
 
