@@ -30,7 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // This avoids depending on session cookies surviving the cross-site redirect.
         $middleware->appendToGroup('web', \App\Http\Middleware\AutoLoginFromCache::class);
 
+        // Redirect unauthenticated web requests (Passport /oauth/authorize) to Schwab OAuth.
+        // API requests get a plain 401 JSON response instead.
         $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
             $passportAuthorizeUrl = $request->fullUrl();
 
             $state = bin2hex(random_bytes(16));
