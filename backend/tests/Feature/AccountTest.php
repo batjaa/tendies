@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\SchwabToken;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -23,13 +22,24 @@ class AccountTest extends TestCase
         ]);
 
         $user = User::factory()->onTrial()->create();
-        SchwabToken::factory()->for($user)->create(['token_expires_at' => now()->addMinutes(15)]);
+        $this->createTradingAccountWithToken($user);
         Passport::actingAs($user);
 
         $response = $this->getJson('/api/v1/accounts');
 
         $response->assertOk()
             ->assertJson([['accountNumber' => '12345', 'hashValue' => 'abc']]);
+    }
+
+    public function test_returns_empty_when_no_trading_account(): void
+    {
+        $user = User::factory()->onTrial()->create();
+        Passport::actingAs($user);
+
+        $response = $this->getJson('/api/v1/accounts');
+
+        $response->assertOk()
+            ->assertJson([]);
     }
 
     public function test_requires_auth(): void
@@ -57,7 +67,7 @@ class AccountTest extends TestCase
         ]);
 
         $user = User::factory()->onTrial()->create();
-        SchwabToken::factory()->for($user)->create(['token_expires_at' => now()->addMinutes(15)]);
+        $this->createTradingAccountWithToken($user);
         Passport::actingAs($user);
 
         $response = $this->getJson('/api/v1/accounts');
@@ -79,7 +89,9 @@ class AccountTest extends TestCase
         ]);
 
         $user = User::factory()->onTrial()->create();
-        SchwabToken::factory()->expired()->for($user)->create();
+        $account = $this->createTradingAccountWithToken($user);
+        // Make the token expired.
+        $account->schwabToken->update(['token_expires_at' => now()->subMinute()]);
         Passport::actingAs($user);
 
         $response = $this->getJson('/api/v1/accounts');
@@ -95,7 +107,8 @@ class AccountTest extends TestCase
         ]);
 
         $user = User::factory()->onTrial()->create();
-        SchwabToken::factory()->expired()->for($user)->create();
+        $account = $this->createTradingAccountWithToken($user);
+        $account->schwabToken->update(['token_expires_at' => now()->subMinute()]);
         Passport::actingAs($user);
 
         $response = $this->getJson('/api/v1/accounts');

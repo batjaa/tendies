@@ -2,18 +2,18 @@
 
 namespace Tests\Feature;
 
-use App\Models\SchwabToken;
+use App\Models\TradingAccount;
+use App\Models\TradingAccountHash;
 use App\Models\User;
-use App\Services\SchwabService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Mockery;
 use Tests\TestCase;
+use Tests\Traits\CreatesSubscribedUser;
 
 class SchwabCallbackTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesSubscribedUser, RefreshDatabase;
 
     private string $validState;
 
@@ -37,23 +37,20 @@ class SchwabCallbackTest extends TestCase
         Cache::put("schwab_state:{$this->validState}", $this->passportAuthorizeUrl, now()->addMinutes(10));
     }
 
-    private function fakeSuccessfulSchwabApi(): void
+    private function fakeSuccessfulSchwabApi(?array $accounts = null): void
     {
+        $accounts ??= [
+            ['accountNumber' => '111', 'hashValue' => 'hash-a'],
+        ];
+
         Http::fake([
             'api.schwabapi.com/v1/oauth/token' => Http::response([
                 'access_token' => 'new-access',
                 'refresh_token' => 'new-refresh',
                 'expires_in' => 1800,
             ]),
-            'api.schwabapi.com/trader/v1/accounts/accountNumbers' => Http::response([
-                ['accountNumber' => '111', 'hashValue' => 'hash-a'],
-            ]),
+            'api.schwabapi.com/trader/v1/accounts/accountNumbers' => Http::response($accounts),
         ]);
-    }
-
-    private function expectedAccountHash(): string
-    {
-        return hash('sha256', 'hash-a');
     }
 
     // --- State validation ---
@@ -61,30 +58,25 @@ class SchwabCallbackTest extends TestCase
     public function test_missing_state_returns_400(): void
     {
         $response = $this->get('/auth/schwab/callback?code=some-code');
-
         $response->assertStatus(400);
     }
 
     public function test_malformed_state_returns_400(): void
     {
         $response = $this->get('/auth/schwab/callback?state=not-hex&code=some-code');
-
         $response->assertStatus(400);
     }
 
     public function test_unknown_state_returns_403(): void
     {
         $unknownState = bin2hex(random_bytes(16));
-
         $response = $this->get("/auth/schwab/callback?state={$unknownState}&code=some-code");
-
         $response->assertStatus(403);
     }
 
     public function test_missing_code_returns_400(): void
     {
         $response = $this->get("/auth/schwab/callback?state={$this->validState}");
-
         $response->assertStatus(400);
     }
 
@@ -94,13 +86,12 @@ class SchwabCallbackTest extends TestCase
         Cache::put("schwab_state:{$state}", 'https://evil.com/oauth/authorize?state=x', now()->addMinutes(10));
 
         $response = $this->get("/auth/schwab/callback?state={$state}&code=some-code");
-
         $response->assertStatus(400);
     }
 
-    // --- New user creation ---
+    // --- New anonymous user creation ---
 
-    public function test_new_user_created_with_account_hash_and_trial(): void
+    public function test_new_user_created_with_trading_account_and_trial(): void
     {
         $this->fakeSuccessfulSchwabApi();
 
@@ -108,28 +99,35 @@ class SchwabCallbackTest extends TestCase
 
         $response->assertRedirect();
 
-        $hash = $this->expectedAccountHash();
-        $this->assertDatabaseHas('users', ['schwab_account_hash' => $hash]);
-
-        $user = User::where('schwab_account_hash', $hash)->first();
+        // Anonymous user created (no email).
+        $this->assertDatabaseCount('users', 1);
+        $user = User::first();
+        $this->assertNull($user->email);
         $this->assertNotNull($user->trial_ends_at);
         $this->assertTrue($user->trial_ends_at->isFuture());
-        $this->assertDatabaseHas('schwab_tokens', ['user_id' => $user->id]);
+
+        // TradingAccount + hash + token created.
+        $this->assertDatabaseCount('trading_accounts', 1);
+        $this->assertDatabaseHas('trading_account_hashes', ['hash_value' => 'hash-a']);
+        $this->assertDatabaseHas('schwab_tokens', ['trading_account_id' => $user->tradingAccounts->first()->id]);
     }
 
-    // --- Returning user ---
+    // --- Returning user (same hashes) ---
 
     public function test_returning_user_recognized_by_account_hash(): void
     {
         $this->fakeSuccessfulSchwabApi();
 
-        $existingUser = User::factory()->withSchwabHash($this->expectedAccountHash())->onTrial()->create();
+        $user = User::factory()->onTrial()->create();
+        $account = TradingAccount::factory()->create(['user_id' => $user->id]);
+        $account->hashes()->create(['hash_value' => 'hash-a']);
 
         $response = $this->get("/auth/schwab/callback?state={$this->validState}&code=auth-code");
 
         $response->assertRedirect();
         $this->assertDatabaseCount('users', 1);
-        $this->assertDatabaseHas('schwab_tokens', ['user_id' => $existingUser->id]);
+        $this->assertDatabaseCount('trading_accounts', 1);
+        $this->assertDatabaseHas('schwab_tokens', ['trading_account_id' => $account->id]);
     }
 
     public function test_trial_not_reset_for_returning_user(): void
@@ -137,35 +135,14 @@ class SchwabCallbackTest extends TestCase
         $this->fakeSuccessfulSchwabApi();
 
         $trialEnd = now()->addDays(3);
-        User::factory()->withSchwabHash($this->expectedAccountHash())->create([
-            'trial_ends_at' => $trialEnd,
-        ]);
+        $user = User::factory()->create(['trial_ends_at' => $trialEnd]);
+        $account = TradingAccount::factory()->create(['user_id' => $user->id]);
+        $account->hashes()->create(['hash_value' => 'hash-a']);
 
         $this->get("/auth/schwab/callback?state={$this->validState}&code=auth-code");
 
-        $user = User::where('schwab_account_hash', $this->expectedAccountHash())->first();
+        $user->refresh();
         $this->assertEquals($trialEnd->format('Y-m-d H:i:s'), $user->trial_ends_at->format('Y-m-d H:i:s'));
-    }
-
-    // --- Legacy user adoption ---
-
-    public function test_legacy_user_adopted_by_account_hash(): void
-    {
-        $this->fakeSuccessfulSchwabApi();
-
-        $legacyUser = User::factory()->create([
-            'email' => 'old-hash@schwab.local',
-            'schwab_account_hash' => null,
-        ]);
-        SchwabToken::factory()->for($legacyUser)->create();
-
-        $response = $this->get("/auth/schwab/callback?state={$this->validState}&code=auth-code");
-
-        $response->assertRedirect();
-        $this->assertDatabaseCount('users', 1);
-
-        $legacyUser->refresh();
-        $this->assertEquals($this->expectedAccountHash(), $legacyUser->schwab_account_hash);
     }
 
     // --- Redirect and Passport state caching ---
@@ -188,7 +165,7 @@ class SchwabCallbackTest extends TestCase
         $cachedUserId = Cache::get('passport_user:passport-state-123');
         $this->assertNotNull($cachedUserId);
 
-        $user = User::where('schwab_account_hash', $this->expectedAccountHash())->first();
+        $user = User::first();
         $this->assertEquals($user->id, $cachedUserId);
     }
 
@@ -231,5 +208,21 @@ class SchwabCallbackTest extends TestCase
         $response = $this->get("/auth/schwab/callback?state={$this->validState}&code=auth-code");
 
         $response->assertInternalServerError();
+    }
+
+    // --- Multiple account hashes ---
+
+    public function test_creates_multiple_hash_entries_for_multi_account_user(): void
+    {
+        $this->fakeSuccessfulSchwabApi([
+            ['accountNumber' => '111', 'hashValue' => 'hash-a'],
+            ['accountNumber' => '222', 'hashValue' => 'hash-b'],
+        ]);
+
+        $this->get("/auth/schwab/callback?state={$this->validState}&code=auth-code");
+
+        $this->assertDatabaseCount('trading_account_hashes', 2);
+        $this->assertDatabaseHas('trading_account_hashes', ['hash_value' => 'hash-a']);
+        $this->assertDatabaseHas('trading_account_hashes', ['hash_value' => 'hash-b']);
     }
 }

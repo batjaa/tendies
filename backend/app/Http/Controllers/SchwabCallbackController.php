@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Services\LinkAccountService;
 use App\Services\SchwabService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 
 class SchwabCallbackController extends Controller
 {
-    public function callback(Request $request, SchwabService $schwab)
+    public function callback(Request $request, SchwabService $schwab, LinkAccountService $linkService)
     {
         $state = $request->input('state');
         if (! $state || ! preg_match('/^[a-f0-9]{32}$/', $state)) {
@@ -37,54 +36,61 @@ class SchwabCallbackController extends Controller
         }
 
         $tokenData = $schwab->exchangeCode($code);
+        $hashes = $schwab->fetchAccountHashes($tokenData['access_token']);
 
-        // Derive a stable identity from Schwab account hashes (survives token rotation).
-        $accountHash = $schwab->fetchAccountHash($tokenData['access_token']);
-
-        // Look up by stable account hash first.
-        $user = User::where('schwab_account_hash', $accountHash)->first();
-
-        if (! $user) {
-            // Adopt a legacy user (created before account-hash identity) if one exists.
-            // Legacy users have @schwab.local emails and null schwab_account_hash.
-            $user = User::whereNull('schwab_account_hash')
-                ->where('email', 'like', '%@schwab.local')
-                ->whereHas('schwabToken')
-                ->latest('id')
-                ->first();
-
-            if ($user) {
-                // Claim this legacy user with the stable account hash.
-                $user->update(['schwab_account_hash' => $accountHash]);
-            } else {
-                $user = User::create([
-                    'name' => 'Schwab User',
-                    'email' => $accountHash . '@schwab.local',
-                    'password' => bcrypt(Str::random(32)),
-                    'schwab_account_hash' => $accountHash,
-                ]);
+        // Check for link session (authenticated user linking a new provider).
+        $linkSessionId = $request->session()->get('link_session_id');
+        $authenticatedUser = null;
+        if ($linkSessionId) {
+            $linkData = Cache::pull("link_session:{$linkSessionId}");
+            if ($linkData) {
+                $authenticatedUser = \App\Models\User::find($linkData['user_id']);
             }
+            $request->session()->forget('link_session_id');
         }
 
-        if (! $user->trial_ends_at && ! $user->subscribed('default')) {
-            $user->trial_ends_at = now()->addDays(7);
-            $user->save();
+        // Check for waitlist invite token.
+        $inviteEmail = null;
+        $inviteName = null;
+        $inviteToken = $request->session()->get('waitlist_invite_token');
+        if ($inviteToken) {
+            $waitlistEntry = \App\Models\WaitlistEntry::where('invite_token', $inviteToken)
+                ->where('status', 'invited')
+                ->first();
+            if ($waitlistEntry && ! $waitlistEntry->isExpired()) {
+                $inviteEmail = $waitlistEntry->email;
+                $inviteName = $waitlistEntry->name;
+            }
+            $request->session()->forget('waitlist_invite_token');
         }
 
-        $schwab->storeTokens($user, $tokenData);
+        $result = $linkService->resolveOrCreateAccount(
+            $hashes,
+            $tokenData,
+            $authenticatedUser,
+            $inviteEmail,
+            $inviteName,
+        );
+
+        $user = $result['user'];
+
+        // Mark waitlist entry as accepted.
+        if ($inviteToken && isset($waitlistEntry) && $waitlistEntry->status === 'invited') {
+            $waitlistEntry->update([
+                'status' => 'accepted',
+                'accepted_at' => now(),
+            ]);
+        }
 
         Auth::login($user);
 
-        // Extract the Passport state from the original authorize URL and cache the user ID.
-        // This allows AutoLoginFromCache middleware to re-authenticate the user
-        // even if the session cookie is lost (e.g., through ngrok).
+        // Cache user ID for AutoLoginFromCache middleware (survives session loss through ngrok).
         $parsedUrl = parse_url($passportAuthorizeUrl);
         parse_str($parsedUrl['query'] ?? '', $queryParams);
         if (! empty($queryParams['state'])) {
             Cache::put("passport_user:{$queryParams['state']}", $user->id, now()->addMinutes(5));
         }
 
-        // Redirect back to the Passport authorize URL that started this flow.
         return redirect($passportAuthorizeUrl);
     }
 }

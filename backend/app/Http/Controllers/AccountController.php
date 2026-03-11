@@ -9,8 +9,14 @@ class AccountController extends Controller
 {
     public function index(Request $request, SchwabService $schwab)
     {
+        $tradingAccount = $request->user()->primaryTradingAccount;
+
+        if (! $tradingAccount) {
+            return response()->json([], 200);
+        }
+
         $accounts = $schwab->makeRequest(
-            $request->user(),
+            $tradingAccount,
             'get',
             '/accounts/accountNumbers'
         );

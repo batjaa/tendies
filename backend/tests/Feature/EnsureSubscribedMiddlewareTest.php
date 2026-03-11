@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\SchwabToken;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -41,7 +40,7 @@ class EnsureSubscribedMiddlewareTest extends TestCase
         ]);
 
         $user = User::factory()->onTrial()->create();
-        SchwabToken::factory()->for($user)->create(['token_expires_at' => now()->addMinutes(15)]);
+        $this->createTradingAccountWithToken($user);
         Passport::actingAs($user);
 
         $response = $this->getJson('/api/v1/accounts');
@@ -56,7 +55,6 @@ class EnsureSubscribedMiddlewareTest extends TestCase
         ]);
 
         $user = $this->createSubscribedUser();
-        SchwabToken::factory()->for($user)->create(['token_expires_at' => now()->addMinutes(15)]);
         Passport::actingAs($user);
 
         $response = $this->getJson('/api/v1/accounts');
@@ -66,9 +64,7 @@ class EnsureSubscribedMiddlewareTest extends TestCase
 
     public function test_past_due_subscription_blocked(): void
     {
-        // Cashier v16 deactivates past_due subscriptions by default.
         $user = $this->createSubscribedUser('past_due');
-        SchwabToken::factory()->for($user)->create(['token_expires_at' => now()->addMinutes(15)]);
         Passport::actingAs($user);
 
         $response = $this->getJson('/api/v1/accounts');

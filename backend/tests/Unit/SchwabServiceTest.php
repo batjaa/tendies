@@ -4,15 +4,17 @@ namespace Tests\Unit;
 
 use App\Exceptions\SchwabAuthException;
 use App\Models\SchwabToken;
+use App\Models\TradingAccount;
 use App\Models\User;
 use App\Services\SchwabService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
+use Tests\Traits\CreatesSubscribedUser;
 
 class SchwabServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesSubscribedUser, RefreshDatabase;
 
     private SchwabService $service;
 
@@ -29,6 +31,19 @@ class SchwabServiceTest extends TestCase
             'schwab.token_url' => 'https://api.schwabapi.com/v1/oauth/token',
             'schwab.api_base_url' => 'https://api.schwabapi.com/trader/v1',
         ]);
+    }
+
+    private function createTradingAccountWithTokenForTest(array $tokenOverrides = []): TradingAccount
+    {
+        $user = User::factory()->create();
+        $account = TradingAccount::factory()->create(['user_id' => $user->id]);
+        $account->hashes()->create(['hash_value' => hash('sha256', fake()->uuid())]);
+        SchwabToken::factory()->create(array_merge(
+            ['trading_account_id' => $account->id],
+            $tokenOverrides,
+        ));
+
+        return $account;
     }
 
     public function test_get_authorize_url_builds_correct_url(): void
@@ -99,44 +114,43 @@ class SchwabServiceTest extends TestCase
     public function test_store_tokens_creates_new_token(): void
     {
         $user = User::factory()->create();
+        $account = TradingAccount::factory()->create(['user_id' => $user->id]);
 
-        $this->service->storeTokens($user, [
+        $this->service->storeTokens($account, [
             'access_token' => 'access-123',
             'refresh_token' => 'refresh-123',
             'expires_in' => 1800,
         ]);
 
         $this->assertDatabaseCount('schwab_tokens', 1);
-        $token = $user->schwabToken()->first();
+        $token = $account->schwabToken()->first();
         $this->assertEquals('access-123', $token->encrypted_access_token);
         $this->assertEquals('refresh-123', $token->encrypted_refresh_token);
     }
 
     public function test_store_tokens_updates_existing_token(): void
     {
-        $user = User::factory()->create();
-        SchwabToken::factory()->for($user)->create();
+        $account = $this->createTradingAccountWithTokenForTest();
 
-        $this->service->storeTokens($user, [
+        $this->service->storeTokens($account, [
             'access_token' => 'updated-access',
             'refresh_token' => 'updated-refresh',
             'expires_in' => 1800,
         ]);
 
         $this->assertDatabaseCount('schwab_tokens', 1);
-        $token = $user->schwabToken()->first();
+        $token = $account->schwabToken()->first();
         $this->assertEquals('updated-access', $token->encrypted_access_token);
     }
 
     public function test_get_valid_access_token_returns_current_if_valid(): void
     {
-        $user = User::factory()->create();
-        SchwabToken::factory()->for($user)->create([
+        $account = $this->createTradingAccountWithTokenForTest([
             'encrypted_access_token' => 'valid-token',
             'token_expires_at' => now()->addMinutes(15),
         ]);
 
-        $token = $this->service->getValidAccessToken($user);
+        $token = $this->service->getValidAccessToken($account);
 
         $this->assertEquals('valid-token', $token);
         Http::assertNothingSent();
@@ -152,10 +166,11 @@ class SchwabServiceTest extends TestCase
             ]),
         ]);
 
-        $user = User::factory()->create();
-        SchwabToken::factory()->expired()->for($user)->create();
+        $account = $this->createTradingAccountWithTokenForTest([
+            'token_expires_at' => now()->subMinute(),
+        ]);
 
-        $token = $this->service->getValidAccessToken($user);
+        $token = $this->service->getValidAccessToken($account);
 
         $this->assertEquals('refreshed-access', $token);
     }
@@ -163,11 +178,12 @@ class SchwabServiceTest extends TestCase
     public function test_get_valid_access_token_throws_if_no_token(): void
     {
         $user = User::factory()->create();
+        $account = TradingAccount::factory()->create(['user_id' => $user->id]);
 
         $this->expectException(SchwabAuthException::class);
         $this->expectExceptionMessage('No Schwab token found');
 
-        $this->service->getValidAccessToken($user);
+        $this->service->getValidAccessToken($account);
     }
 
     public function test_make_request_calls_api_with_token(): void
@@ -178,13 +194,12 @@ class SchwabServiceTest extends TestCase
             ]),
         ]);
 
-        $user = User::factory()->create();
-        SchwabToken::factory()->for($user)->create([
+        $account = $this->createTradingAccountWithTokenForTest([
             'encrypted_access_token' => 'my-token',
             'token_expires_at' => now()->addMinutes(15),
         ]);
 
-        $result = $this->service->makeRequest($user, 'get', '/accounts/accountNumbers');
+        $result = $this->service->makeRequest($account, 'get', '/accounts/accountNumbers');
 
         $this->assertCount(1, $result);
         Http::assertSent(function ($request) {
@@ -198,15 +213,14 @@ class SchwabServiceTest extends TestCase
             'api.schwabapi.com/trader/v1/*' => Http::response('error', 500),
         ]);
 
-        $user = User::factory()->create();
-        SchwabToken::factory()->for($user)->create([
+        $account = $this->createTradingAccountWithTokenForTest([
             'token_expires_at' => now()->addMinutes(15),
         ]);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Schwab API request failed');
 
-        $this->service->makeRequest($user, 'get', '/accounts/accountNumbers');
+        $this->service->makeRequest($account, 'get', '/accounts/accountNumbers');
     }
 
     public function test_make_request_retries_once_on_401_then_succeeds(): void
@@ -223,12 +237,11 @@ class SchwabServiceTest extends TestCase
             ]),
         ]);
 
-        $user = User::factory()->create();
-        SchwabToken::factory()->for($user)->create([
+        $account = $this->createTradingAccountWithTokenForTest([
             'token_expires_at' => now()->addMinutes(15),
         ]);
 
-        $result = $this->service->makeRequest($user, 'get', '/accounts/accountNumbers');
+        $result = $this->service->makeRequest($account, 'get', '/accounts/accountNumbers');
 
         $this->assertCount(1, $result);
     }
@@ -244,18 +257,17 @@ class SchwabServiceTest extends TestCase
             ]),
         ]);
 
-        $user = User::factory()->create();
-        SchwabToken::factory()->for($user)->create([
+        $account = $this->createTradingAccountWithTokenForTest([
             'token_expires_at' => now()->addMinutes(15),
         ]);
 
         $this->expectException(SchwabAuthException::class);
         $this->expectExceptionMessage('Schwab API request failed (HTTP 401)');
 
-        $this->service->makeRequest($user, 'get', '/accounts/accountNumbers');
+        $this->service->makeRequest($account, 'get', '/accounts/accountNumbers');
     }
 
-    public function test_fetch_account_hash_returns_sha256_of_sorted_hashes(): void
+    public function test_fetch_account_hashes_returns_sorted_hash_values(): void
     {
         Http::fake([
             'api.schwabapi.com/trader/v1/accounts/accountNumbers' => Http::response([
@@ -264,13 +276,12 @@ class SchwabServiceTest extends TestCase
             ]),
         ]);
 
-        $result = $this->service->fetchAccountHash('some-token');
+        $result = $this->service->fetchAccountHashes('some-token');
 
-        $expected = hash('sha256', 'hash-a:hash-b');
-        $this->assertEquals($expected, $result);
+        $this->assertEquals(['hash-a', 'hash-b'], $result);
     }
 
-    public function test_fetch_account_hash_throws_on_empty_accounts(): void
+    public function test_fetch_account_hashes_throws_on_empty_accounts(): void
     {
         Http::fake([
             'api.schwabapi.com/trader/v1/accounts/accountNumbers' => Http::response([]),
@@ -279,10 +290,10 @@ class SchwabServiceTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('No Schwab accounts found');
 
-        $this->service->fetchAccountHash('some-token');
+        $this->service->fetchAccountHashes('some-token');
     }
 
-    public function test_fetch_account_hash_throws_on_api_failure(): void
+    public function test_fetch_account_hashes_throws_on_api_failure(): void
     {
         Http::fake([
             'api.schwabapi.com/trader/v1/accounts/accountNumbers' => Http::response('error', 500),
@@ -291,6 +302,6 @@ class SchwabServiceTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Failed to fetch Schwab account numbers');
 
-        $this->service->fetchAccountHash('some-token');
+        $this->service->fetchAccountHashes('some-token');
     }
 }
