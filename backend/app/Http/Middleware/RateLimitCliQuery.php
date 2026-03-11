@@ -44,12 +44,13 @@ class RateLimitCliQuery
 
         $cacheKey = "cli_query:{$user->id}:{$queryId}";
         $dailyKey = "cli_daily:{$user->id}:{$today}";
-        $isNewQuery = ! Cache::has($cacheKey);
 
-        if ($isNewQuery) {
-            $count = (int) Cache::get($dailyKey, 0);
+        // Single Cache::get instead of has() + get() — avoids extra round-trip.
+        $seenBefore = Cache::get($cacheKey);
+        $currentCount = (int) Cache::get($dailyKey, 0);
 
-            if ($count >= User::FREE_DAILY_LIMIT) {
+        if (! $seenBefore) {
+            if ($currentCount >= User::FREE_DAILY_LIMIT) {
                 return response()->json([
                     'error' => 'rate_limit_exceeded',
                     'message' => 'Free tier limit: ' . User::FREE_DAILY_LIMIT . ' queries/day. Upgrade at mytendies.app/pricing',
@@ -57,11 +58,12 @@ class RateLimitCliQuery
                 ], 429);
             }
 
-            Cache::put($dailyKey, $count + 1, now($tz)->endOfDay());
+            $currentCount++;
+            Cache::put($dailyKey, $currentCount, now($tz)->endOfDay());
             Cache::put($cacheKey, true, now($tz)->endOfDay());
         }
 
-        $remaining = max(0, User::FREE_DAILY_LIMIT - (int) Cache::get($dailyKey, 0));
+        $remaining = max(0, User::FREE_DAILY_LIMIT - $currentCount);
         $response = $next($request);
         $response->headers->set('X-RateLimit-Remaining', (string) $remaining);
 

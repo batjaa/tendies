@@ -24,6 +24,7 @@ class TransactionController extends Controller
         // Resolve TradingAccount from the account hash, ensuring it belongs to the authenticated user.
         $hashEntry = TradingAccountHash::where('hash_value', $accountHash)
             ->whereHas('tradingAccount', fn ($q) => $q->where('user_id', $request->user()->id))
+            ->with('tradingAccount')
             ->first();
 
         if (! $hashEntry) {

@@ -70,4 +70,14 @@ class User extends Authenticatable
     {
         return $this->tier() !== 'free' || $this->tradingAccounts()->count() === 0;
     }
+
+    public function toAuthArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'tier' => $this->tier(),
+        ];
+    }
 }

@@ -121,7 +121,7 @@ class LinkAccountService
             $user = User::create([
                 'name' => $inviteName ?? 'Tendies User',
                 'email' => $inviteEmail,
-                'password' => bcrypt(Str::random(32)),
+                'password' => Str::random(32),
                 'trial_ends_at' => now()->addDays(7),
             ]);
             $isNewUser = true;
@@ -129,7 +129,7 @@ class LinkAccountService
             // Anonymous user.
             $user = User::create([
                 'name' => 'Schwab User',
-                'password' => bcrypt(Str::random(32)),
+                'password' => Str::random(32),
             ]);
             $isNewUser = true;
         }
