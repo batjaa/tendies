@@ -194,10 +194,13 @@ The Laravel backend acts as an OAuth proxy between the CLI and the Schwab API.
 
 ```bash
 cd backend
+cp auth.json.example auth.json   # Nova license credentials (required for composer install)
 composer install
 cp .env.example .env
 php artisan key:generate
 ```
+
+> **Nova:** You need a valid `auth.json` with your Nova license credentials. Copy `auth.json.example` and fill in your details. See the [Nova setup skill](/docs/backend/IMPLEMENTATION_PLAN.md) for more info.
 
 Edit `backend/.env` with your Schwab credentials:
 
