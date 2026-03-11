@@ -7,6 +7,7 @@ Tendies is a trading analytics platform that provides FIFO P&L calculations and 
 ## Core Requirements
 
 ### User Experience Goals
+
 1. **Privacy-First for CLI Users** - Allow anonymous usage without collecting personal information
 2. **Flexible Profile Management** - Users can set profile after login, optional personal information sharing
 3. **Waitlist System** - Controlled rollout with magic link invites
@@ -14,6 +15,7 @@ Tendies is a trading analytics platform that provides FIFO P&L calculations and 
 5. **Freemium Model** - Free tier with rate limits, Pro tier with unlimited access
 
 ### Technical Goals
+
 1. **Stable Identity** - Use Schwab account hash (not email) as stable identifier
 2. **Account Separation** - Separate user accounts from trading accounts
 3. **Trial Management** - Flexible trial periods that admins can extend
@@ -85,12 +87,16 @@ erDiagram
     }
 ```
 
+
+
 ### User Types & Flows
 
 #### 1. Anonymous CLI User (Free Tier)
+
 **Identity:** Schwab account hash only  
 **Email:** Auto-generated `{hash}@schwab.local`  
 **Flow:**
+
 ```
 User runs CLI → Schwab OAuth → Create TradingAccount
 → Create anonymous User → Store tokens → CLI queries API
@@ -98,15 +104,18 @@ User runs CLI → Schwab OAuth → Create TradingAccount
 ```
 
 **Characteristics:**
+
 - No personal information collected
 - Can use CLI indefinitely
 - Subject to rate limits
 - Anonymous until they access the app or upgrade
 
 #### 2. Waitlist User (App Access)
+
 **Identity:** Real email address  
 **Email:** User-provided during signup  
 **Flow:**
+
 ```
 Sign up → Join waitlist → Admin sends magic link
 → Click link → Schwab OAuth → Accept invite
@@ -115,28 +124,34 @@ Sign up → Join waitlist → Admin sends magic link
 ```
 
 **Characteristics:**
+
 - Controlled rollout via slots
 - Gets free trial (7 days default)
 - Real email for app notifications
 - Can set billing information separately
 
 #### 3. Returning CLI User (Already Linked)
+
 **Identity:** Existing Schwab account hash  
 **Flow:**
+
 ```
 User runs CLI → Schwab OAuth → Find existing TradingAccount
 → Load User → Refresh tokens → CLI queries API
 ```
 
 **Characteristics:**
+
 - Seamless re-authentication
 - Preserves existing user state
 - No duplicate accounts created
 
 #### 4. Multi-Platform User (Future)
+
 **Identity:** Single user account  
 **Multiple TradingAccounts:** One per platform  
 **Flow:**
+
 ```
 User has Schwab account → Add Robinhood → Connect OAuth
 → Create second TradingAccount → Link to same User
@@ -146,6 +161,7 @@ User has Schwab account → Add Robinhood → Connect OAuth
 ### Authentication & Authorization
 
 #### CLI Authentication (Passport OAuth)
+
 ```
 CLI → POST /oauth/authorize → Redirect to Schwab OAuth
 → User approves → Schwab callback → Create/update user
@@ -154,11 +170,13 @@ CLI → POST /oauth/authorize → Redirect to Schwab OAuth
 ```
 
 **Token Storage:**
+
 - CLI: `~/.config/tendies/token`
 - Encrypted Schwab tokens: Database (Laravel's encrypted cast)
 - Passport tokens: Standard Laravel Passport tables
 
 #### App Authentication (Web Sessions)
+
 ```
 App → Login button → Schwab OAuth → User approves
 → Callback → Create/update user → Laravel session
@@ -168,17 +186,20 @@ App → Login button → Schwab OAuth → User approves
 ### Rate Limiting Strategy
 
 **Free Tier:**
+
 - 15 API queries per day
 - Tracked in `rate_limits` table per user per action per day
 - Middleware: `RateLimitCli` checks count before processing
 - Returns 429 with upgrade message when exceeded
 
 **Pro/Trial Tier:**
+
 - Unlimited queries
 - Middleware skips rate limit check
 - Clean upgrade path via Stripe checkout
 
 **Implementation:**
+
 ```php
 // Check rate limit
 if ($user->isRateLimited()) {
@@ -196,11 +217,13 @@ RateLimit::incrementCount($user, 'api_query');
 ### Waitlist Management
 
 **Slot-Based System:**
+
 - Admin controls `available_slots` in `waitlist_settings`
 - When slot used, count decrements
 - Prevents over-onboarding
 
 **Invitation Flow:**
+
 1. User signs up via public endpoint
 2. Status: `pending`, position tracked
 3. Admin sends invite (manually via Nova or API)
@@ -210,6 +233,7 @@ RateLimit::incrementCount($user, 'api_query');
 7. User created with real email + trial
 
 **Magic Link Security:**
+
 - 64-character random token
 - Stored in session during OAuth
 - Validated in SchwabCallback
@@ -219,11 +243,13 @@ RateLimit::incrementCount($user, 'api_query');
 ### Profile Management
 
 **Anonymous Users:**
+
 - Can view profile showing `@schwab.local` email
 - Limited fields (name, trading accounts)
 - Message prompting upgrade for full features
 
 **Registered Users:**
+
 - Full profile access
 - Can set billing email/name separately
 - View subscription status
@@ -231,6 +257,7 @@ RateLimit::incrementCount($user, 'api_query');
 - See rate limit usage
 
 **Billing Information:**
+
 - `billing_email` - Where invoices are sent
 - `billing_name` - Name on invoices/receipts
 - Separate from account email (privacy)
@@ -271,35 +298,41 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Subscription & Billing
 
 **Stripe Integration (via Cashier):**
+
 - Monthly: $X/month
 - Yearly: $Y/year (discounted)
 - Trial: 7 days default (admin can extend)
 
 **Trial Management:**
+
 - `trial_ends_at` field on User
 - Admin can set to any future date
 - Checked in middleware: `$user->hasActiveTrial()`
 - No auto-upgrade to paid
 
 **Subscription Tiers:**
+
 - **Free**: CLI only, 15 queries/day, basic features
 - **Pro**: Unlimited queries, app access, priority support
 
 ## Security Considerations
 
 ### Token Security
+
 - Schwab tokens encrypted at rest (Laravel's `encrypted` cast)
 - Passport tokens follow OAuth 2.0 best practices
 - PKCE flow for CLI authentication
 - Tokens stored securely in database
 
 ### Privacy
+
 - Minimal data collection for CLI users
 - Email only collected when necessary
 - Billing information separate from account
 - No tracking of personal trading decisions
 
 ### Account Isolation
+
 - Trading accounts scoped to users
 - Rate limits prevent abuse
 - Schwab account hash prevents duplicates
@@ -308,17 +341,20 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Monitoring & Observability
 
 **Rate Limit Tracking:**
+
 - Daily counts per user per action
 - Admin can view in Nova (when installed)
 - Alerts when users hit limits frequently
 
 **Waitlist Metrics:**
+
 - Pending count
 - Invited count
 - Accepted count
 - Conversion rate (invited → accepted)
 
 **User Metrics:**
+
 - Anonymous vs registered ratio
 - Trial → paid conversion
 - Active users by tier
@@ -327,16 +363,19 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Scalability Considerations
 
 **Database:**
+
 - Indexed foreign keys
 - Unique constraints on critical fields
 - Composite unique index on rate_limits (user_id, action, period_date)
 
 **Caching:**
+
 - Schwab tokens cached in memory during request
 - Rate limit counts could be cached (Redis)
 - OAuth state stored in cache (database-backed)
 
 **Background Jobs:**
+
 - Token refresh (when near expiration)
 - Waitlist email sending (queue)
 - Rate limit cleanup (daily)
@@ -344,6 +383,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Future Enhancements
 
 ### Phase 5+ (Not Yet Implemented)
+
 - Multiple trading platform support (Robinhood, E*TRADE)
 - Account merging for existing users
 - Automated invite sending (when slots available)
@@ -354,6 +394,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 - Tax loss harvesting suggestions
 
 ### Admin Features (Nova/Filament)
+
 - Waitlist management dashboard
 - User trial extensions
 - Rate limit overrides
@@ -364,6 +405,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Technology Stack
 
 **Backend:**
+
 - Laravel 12 (PHP 8.2+)
 - MySQL/SQLite
 - Laravel Passport (OAuth)
@@ -371,11 +413,13 @@ GET    /auth/waitlist/verify      - Magic link verification
 - Postmark (email)
 
 **CLI:**
+
 - Go 1.25+
 - Cobra (command framework)
 - OAuth 2.0 PKCE flow
 
 **Infrastructure:**
+
 - Laravel Forge (deployment)
 - Cloudflare (DNS, SSL)
 - GitHub (version control)
@@ -393,6 +437,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 6. Tested both CLI and web flows
 
 **Backwards Compatibility:**
+
 - CLI continues to work without changes
 - Existing tokens remain valid
 - Users automatically adopted on next login
@@ -401,6 +446,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Testing Strategy
 
 **Manual Testing:**
+
 - CLI authentication flow
 - Waitlist signup and invite acceptance
 - Rate limiting behavior
@@ -408,6 +454,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 - Subscription upgrades
 
 **Automated Testing (Future):**
+
 - Feature tests for all endpoints
 - Unit tests for models and services
 - OAuth flow integration tests
@@ -417,11 +464,13 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Deployment
 
 **Environments:**
+
 - **Local:** SQLite, development mode
 - **Staging:** MySQL, Forge deployment, testing environment
 - **Production:** MySQL, Forge deployment, live environment
 
 **Deployment Process:**
+
 1. Push to branch (staging/main)
 2. Forge auto-deploys
 3. Migrations run automatically
@@ -429,6 +478,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 5. Zero-downtime deployment
 
 **Environment Variables:**
+
 - Schwab API credentials
 - Stripe API keys
 - Postmark token
@@ -441,6 +491,7 @@ GET    /auth/waitlist/verify      - Magic link verification
 ## Summary
 
 This architecture provides:
+
 - ✅ Privacy-first CLI experience
 - ✅ Controlled app rollout via waitlist
 - ✅ Flexible trial and subscription management
