@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Exceptions\SchwabAuthException;
-use App\Models\SchwabToken;
-use App\Models\User;
+use App\Models\TradingAccount;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class SchwabService
@@ -56,10 +56,10 @@ class SchwabService
         return $response->json();
     }
 
-    public function storeTokens(User $user, array $tokenData): void
+    public function storeTokens(TradingAccount $tradingAccount, array $tokenData): void
     {
-        $user->schwabToken()->updateOrCreate(
-            ['user_id' => $user->id],
+        $tradingAccount->schwabToken()->updateOrCreate(
+            ['trading_account_id' => $tradingAccount->id],
             [
                 'encrypted_access_token' => $tokenData['access_token'],
                 'encrypted_refresh_token' => $tokenData['refresh_token'],
@@ -68,27 +68,51 @@ class SchwabService
         );
     }
 
-    public function getValidAccessToken(User $user): string
+    /**
+     * Get a valid access token for a trading account, refreshing if expired.
+     *
+     * Uses a cache lock to prevent race conditions when multiple requests
+     * try to refresh the same expired token simultaneously (e.g., the
+     * menubar app firing day + week queries in parallel).
+     *
+     * Lock flow:
+     *   Request A arrives, token expired → acquires lock → refreshes → releases
+     *   Request B arrives during refresh → blocks on lock → re-reads → already fresh
+     */
+    public function getValidAccessToken(TradingAccount $tradingAccount): string
     {
-        $schwabToken = $user->schwabToken;
+        $schwabToken = $tradingAccount->schwabToken;
 
         if (! $schwabToken) {
-            throw new SchwabAuthException('No Schwab token found for user');
+            throw new SchwabAuthException('No Schwab token found for trading account');
         }
 
         if ($schwabToken->token_expires_at && $schwabToken->token_expires_at->isFuture()) {
             return $schwabToken->encrypted_access_token;
         }
 
-        $tokenData = $this->refreshToken($schwabToken->encrypted_refresh_token);
-        $this->storeTokens($user, $tokenData);
+        $lock = Cache::lock("schwab_refresh:{$tradingAccount->id}", 10);
 
-        return $tokenData['access_token'];
+        try {
+            $lock->block(5);
+            $tradingAccount->schwabToken->refresh();
+
+            if ($tradingAccount->schwabToken->token_expires_at->isFuture()) {
+                return $tradingAccount->schwabToken->encrypted_access_token;
+            }
+
+            $tokenData = $this->refreshToken($tradingAccount->schwabToken->encrypted_refresh_token);
+            $this->storeTokens($tradingAccount, $tokenData);
+
+            return $tokenData['access_token'];
+        } finally {
+            optional($lock)->release();
+        }
     }
 
-    public function makeRequest(User $user, string $method, string $path, array $query = []): array
+    public function makeRequest(TradingAccount $tradingAccount, string $method, string $path, array $query = []): array
     {
-        $accessToken = $this->getValidAccessToken($user);
+        $accessToken = $this->getValidAccessToken($tradingAccount);
         $url = config('schwab.api_base_url') . $path;
 
         $response = Http::withToken($accessToken)
@@ -96,10 +120,10 @@ class SchwabService
 
         // On 401, refresh the token once and retry before giving up.
         if ($response->status() === 401) {
-            $schwabToken = $user->schwabToken;
+            $schwabToken = $tradingAccount->schwabToken;
             if ($schwabToken) {
                 $tokenData = $this->refreshToken($schwabToken->encrypted_refresh_token);
-                $this->storeTokens($user, $tokenData);
+                $this->storeTokens($tradingAccount, $tokenData);
                 $response = Http::withToken($tokenData['access_token'])
                     ->$method($url, $query);
             }
@@ -119,10 +143,10 @@ class SchwabService
     }
 
     /**
-     * Fetch account hashes from Schwab using a raw access token.
-     * Returns a stable composite hash derived from sorted account hashValues.
+     * Fetch individual account hash values from Schwab using a raw access token.
+     * Returns an array of hashValue strings (not a composite hash).
      */
-    public function fetchAccountHash(string $accessToken): string
+    public function fetchAccountHashes(string $accessToken): array
     {
         $url = config('schwab.api_base_url') . '/accounts/accountNumbers';
 
@@ -139,6 +163,6 @@ class SchwabService
             throw new \RuntimeException('No Schwab accounts found');
         }
 
-        return hash('sha256', implode(':', $hashes));
+        return $hashes;
     }
 }
