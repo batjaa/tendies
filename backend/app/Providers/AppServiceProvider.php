@@ -22,5 +22,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Passport::authorizationView('passport.authorize');
         Passport::useClientModel(\App\Models\PassportClient::class);
+        Passport::personalAccessTokensExpireIn(now()->addDays(90));
     }
 }
