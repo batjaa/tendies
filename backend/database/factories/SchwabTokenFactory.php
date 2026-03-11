@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\SchwabToken;
-use App\Models\User;
+use App\Models\TradingAccount;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<SchwabToken> */
@@ -14,7 +14,7 @@ class SchwabTokenFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
+            'trading_account_id' => TradingAccount::factory(),
             'encrypted_access_token' => 'fake-access-token',
             'encrypted_refresh_token' => 'fake-refresh-token',
             'token_expires_at' => now()->addMinutes(30),

@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SchwabToken extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'trading_account_id',
         'encrypted_access_token',
         'encrypted_refresh_token',
         'token_expires_at',
@@ -25,8 +26,8 @@ class SchwabToken extends Model
         ];
     }
 
-    public function user()
+    public function tradingAccount(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(TradingAccount::class);
     }
 }

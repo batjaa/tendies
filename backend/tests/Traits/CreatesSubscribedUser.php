@@ -2,6 +2,8 @@
 
 namespace Tests\Traits;
 
+use App\Models\SchwabToken;
+use App\Models\TradingAccount;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -9,11 +11,29 @@ trait CreatesSubscribedUser
 {
     protected function createSubscribedUser(string $stripeStatus = 'active', ?string $priceId = null): User
     {
-        $user = User::factory()->withSchwabHash()->create();
-
+        $user = User::factory()->create();
+        $this->createTradingAccountWithToken($user);
         $this->addSubscription($user, $stripeStatus, $priceId);
 
         return $user;
+    }
+
+    protected function createTradingAccountWithToken(User $user, string $provider = 'schwab'): TradingAccount
+    {
+        $account = TradingAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => $provider,
+        ]);
+
+        $account->hashes()->create([
+            'hash_value' => hash('sha256', fake()->uuid()),
+        ]);
+
+        SchwabToken::factory()->create([
+            'trading_account_id' => $account->id,
+        ]);
+
+        return $account;
     }
 
     protected function addSubscription(User $user, string $stripeStatus = 'active', ?string $priceId = null): void
