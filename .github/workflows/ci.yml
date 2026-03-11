@@ -37,6 +37,10 @@ jobs:
           extensions: mbstring, xml, sqlite3
           coverage: none
 
+      - name: Configure Nova
+        run: |
+          echo '{"http-basic":{"nova.laravel.com":{"username":"${{ secrets.NOVA_USERNAME }}","password":"${{ secrets.NOVA_PASSWORD }}"}}}' > auth.json
+
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
