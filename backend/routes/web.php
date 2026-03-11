@@ -38,6 +38,35 @@ Route::get('/auth/link/complete', function () {
     return response()->json(['status' => 'linked', 'message' => 'Account linked successfully.']);
 })->name('auth.link.complete');
 
+Route::get('/auth/waitlist/verify', function (\Illuminate\Http\Request $request, \App\Services\SchwabService $schwab) {
+    $token = $request->query('token');
+    if (! $token) {
+        abort(400, 'Missing invite token');
+    }
+
+    $entry = \App\Models\WaitlistEntry::where('invite_token', $token)
+        ->where('status', 'invited')
+        ->first();
+
+    if (! $entry) {
+        abort(403, 'Invalid or already used invite');
+    }
+
+    if ($entry->isExpired()) {
+        abort(403, 'Invite has expired');
+    }
+
+    // Store token in session for the Schwab callback to consume.
+    session(['waitlist_invite_token' => $token]);
+
+    $state = bin2hex(random_bytes(16));
+
+    $passportAuthorizeUrl = config('app.url') . '/auth/waitlist/welcome';
+    Cache::put("schwab_state:{$state}", $passportAuthorizeUrl, now()->addMinutes(10));
+
+    return redirect($schwab->getAuthorizeUrl($state));
+})->name('auth.waitlist.verify');
+
 Route::get('/subscription/success', function () {
     return view('subscription.success');
 });

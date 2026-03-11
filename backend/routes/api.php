@@ -6,15 +6,17 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\WaitlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
-// Public auth endpoints (no auth required).
+// Public endpoints (no auth required).
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/waitlist/signup', [WaitlistController::class, 'signup']);
 
 Route::middleware(['auth:api', 'subscribed'])->group(function () {
     Route::get('/v1/accounts', [AccountController::class, 'index']);
