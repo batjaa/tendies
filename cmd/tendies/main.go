@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
 	"math"
 	"os"
 	"sort"
@@ -23,10 +22,14 @@ import (
 	"github.com/batjaa/tendies/internal/schwab"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
+	"golang.org/x/term"
 )
 
 // version is set at build time via ldflags.
 var version = "dev"
+
+// patTokenTTL is the lifetime of personal access tokens from register/login.
+const patTokenTTL = 90 * 24 * time.Hour
 
 const (
 	colorReset          = "\033[0m"
@@ -83,36 +86,13 @@ func main() {
 			return err
 		},
 	}
-	authCmd := &cobra.Command{
-		Use:   "auth",
-		Short: "Manage authentication",
+	accountCmd := &cobra.Command{
+		Use:     "account",
+		Aliases: []string{"accounts"},
+		Short:   "Manage Schwab accounts",
 	}
-	authLoginCmd := &cobra.Command{
-		Use:   "login",
-		Short: "Authenticate and save OAuth token",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
-			}
-			if opts.direct {
-				return runDirectLogin()
-			}
-			return runBrokerLogin()
-		},
-	}
-	authLogoutCmd := &cobra.Command{
-		Use:   "logout",
-		Short: "Remove saved OAuth token from keychain",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
-			}
-			return runLogout(opts)
-		},
-	}
-	authCmd.AddCommand(authLoginCmd, authLogoutCmd)
-	accountsCmd := &cobra.Command{
-		Use:   "accounts",
+	accountListCmd := &cobra.Command{
+		Use:   "list",
 		Short: "List accessible Schwab accounts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
@@ -121,6 +101,45 @@ func main() {
 			return runAccounts(opts)
 		},
 	}
+	accountLinkCmd := &cobra.Command{
+		Use:   "link",
+		Short: "Link a new Schwab account",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
+			}
+			return runAccountLink()
+		},
+	}
+	accountCreateCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a new account with email and password",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runAccountCreate()
+		},
+	}
+	accountLoginCmd := &cobra.Command{
+		Use:   "login",
+		Short: "Log in with email and password",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runAccountLogin()
+		},
+	}
+	accountLogoutCmd := &cobra.Command{
+		Use:   "logout",
+		Short: "Remove saved token from keychain",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runAccountLogout(opts)
+		},
+	}
+	accountStatusCmd := &cobra.Command{
+		Use:   "status",
+		Short: "Show account info and subscription status",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runAccountStatus()
+		},
+	}
+	accountCmd.AddCommand(accountListCmd, accountLinkCmd, accountCreateCmd, accountLoginCmd, accountLogoutCmd, accountStatusCmd)
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the tendies version",
@@ -128,7 +147,7 @@ func main() {
 			fmt.Println(version)
 		},
 	}
-	rootCmd.AddCommand(authCmd, accountsCmd, versionCmd)
+	rootCmd.AddCommand(accountCmd, versionCmd)
 
 	rootCmd.Flags().BoolVar(&opts.showDay, "day", false, "Show realized P&L for today")
 	rootCmd.Flags().BoolVar(&opts.showWeek, "week", false, "Show realized P&L for this week")
@@ -374,6 +393,13 @@ func buildBrokerClient(cfg *config.Config) (*broker.Client, error) {
 	bc.AccessToken = bt.AccessToken
 	bc.RefreshToken = bt.RefreshToken
 	bc.TokenExpiry = bt.Expiry
+
+	// Set rate-limit headers for free-tier tracking.
+	if qid, err := randomState(); err == nil {
+		bc.QueryID = qid
+	}
+	bc.Timezone = time.Now().Location().String()
+
 	return bc, nil
 }
 
@@ -470,88 +496,80 @@ func mapKeys(m map[string]struct{}) []string {
 	return keys
 }
 
-func runBrokerLogin() error {
+func runAccountCreate() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
-	clientID := cfg.BrokerClientID
-	if clientID == "" {
-		return errors.New("broker_client_id not set in config; run tendies --config or use --direct for direct Schwab API access")
+
+	name, err := promptLine("Name: ")
+	if err != nil {
+		return err
+	}
+	email, err := promptLine("Email: ")
+	if err != nil {
+		return err
+	}
+	pw, err := promptPassword("Password: ")
+	if err != nil {
+		return err
 	}
 
-	bc := broker.NewClient(cfg.BrokerURL, clientID)
+	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
 	ctx := context.Background()
 
-	if err := bc.Login(ctx); err != nil {
-		return fmt.Errorf("broker login failed: %w", err)
+	resp, err := bc.Register(ctx, name, email, pw)
+	if err != nil {
+		return err
 	}
 
 	if err := config.SaveBrokerToken(&config.BrokerToken{
-		AccessToken:  bc.AccessToken,
-		RefreshToken: bc.RefreshToken,
-		Expiry:       bc.TokenExpiry,
+		AccessToken: resp.Token,
+		Expiry:      time.Now().Add(patTokenTTL),
 	}); err != nil {
 		return err
 	}
 
-	fmt.Printf("Login complete. Token saved to keychain (expires: %s).\n", bc.TokenExpiry.Local().Format(time.RFC3339))
+	fmt.Printf("Account created. Welcome, %s! (tier: %s)\n", resp.User.Name, resp.User.Tier)
+	fmt.Println("Run `tendies account link` to connect your Schwab account.")
 	return nil
 }
 
-func runDirectLogin() error {
+func runAccountLogin() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(cfg.ClientID) == "" || strings.TrimSpace(cfg.ClientSecret) == "" {
-		return errors.New("missing Schwab credentials in config; run tendies --config and set client_id/client_secret")
-	}
-	if strings.TrimSpace(cfg.RedirectURL) == "" {
-		return errors.New("missing redirect_url in config; run tendies --config")
-	}
 
-	client := schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
-	state, err := randomState()
-	if err != nil {
-		return fmt.Errorf("failed to generate OAuth state: %w", err)
-	}
-
-	authURL := client.GetAuthURL(state)
-	fmt.Println("Open this URL in your browser and authorize access:")
-	fmt.Println(authURL)
-	fmt.Println()
-	fmt.Print("Paste the redirect URL: ")
-
-	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	if err != nil && !errors.Is(err, io.EOF) {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			return fmt.Errorf("failed to read authorization input: %w", err)
-		}
-	}
-
-	code, returnedState, err := parseOAuthInput(line)
+	email, err := promptLine("Email: ")
 	if err != nil {
 		return err
 	}
-	if returnedState != state {
-		return errors.New("state mismatch in callback URL (possible CSRF — retry login)")
-	}
-
-	token, err := client.ExchangeCode(context.Background(), code)
+	pw, err := promptPassword("Password: ")
 	if err != nil {
-		return fmt.Errorf("failed to exchange authorization code: %w", err)
-	}
-	if err := config.SaveToken(token); err != nil {
 		return err
 	}
 
-	fmt.Printf("Login complete. Token saved to keychain (expires: %s).\n", token.Expiry.Local().Format(time.RFC3339))
+	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
+	ctx := context.Background()
+
+	resp, err := bc.AuthLogin(ctx, email, pw)
+	if err != nil {
+		return err
+	}
+
+	if err := config.SaveBrokerToken(&config.BrokerToken{
+		AccessToken: resp.Token,
+		Expiry:      time.Now().Add(patTokenTTL),
+	}); err != nil {
+		return err
+	}
+
+	fmt.Printf("Logged in as %s (%s, tier: %s)\n", resp.User.Name, resp.User.Email, resp.User.Tier)
 	return nil
 }
 
-func runLogout(opts *cliOptions) error {
+func runAccountLogout(opts *cliOptions) error {
 	if opts.direct {
 		if err := config.DeleteToken(); err != nil {
 			return fmt.Errorf("failed to delete token: %w", err)
@@ -564,6 +582,81 @@ func runLogout(opts *cliOptions) error {
 		fmt.Println("Logged out (broker token removed).")
 	}
 	return nil
+}
+
+func runAccountStatus() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	bc, err := buildBrokerClient(cfg)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	status, err := bc.GetStatus(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get account status: %w", err)
+	}
+
+	u := status.User
+	fmt.Printf("Name:     %s\n", u.Name)
+	if u.Email != "" {
+		fmt.Printf("Email:    %s\n", u.Email)
+	} else {
+		fmt.Printf("Email:    %s(anonymous)%s\n", colorDim, colorReset)
+	}
+	fmt.Printf("Tier:     %s\n", u.Tier)
+	fmt.Printf("Accounts: %d linked\n", status.LinkedAccounts)
+
+	if status.Subscription != nil {
+		fmt.Printf("Plan:     %s (%s)\n", status.Subscription.Plan, status.Subscription.Status)
+	}
+	if status.TrialEndsAt != nil {
+		if t, err := time.Parse(time.RFC3339, *status.TrialEndsAt); err == nil {
+			remaining := time.Until(t)
+			if remaining > 0 {
+				fmt.Printf("Trial:    %d days remaining\n", int(remaining.Hours()/24))
+			} else {
+				fmt.Printf("Trial:    expired\n")
+			}
+		}
+	}
+
+	return nil
+}
+
+// stdinReader is shared across all prompt functions to avoid buffer conflicts.
+var stdinReader = bufio.NewReader(os.Stdin)
+
+func promptLine(label string) (string, error) {
+	fmt.Print(label)
+	line, err := stdinReader.ReadString('\n')
+	if err != nil && len(strings.TrimSpace(line)) == 0 {
+		return "", err
+	}
+	return strings.TrimSpace(line), nil
+}
+
+func promptPassword(label string) (string, error) {
+	fmt.Print(label)
+	fd := int(os.Stdin.Fd())
+	if term.IsTerminal(fd) {
+		pw, err := term.ReadPassword(fd)
+		fmt.Println()
+		if err != nil {
+			return "", err
+		}
+		return string(pw), nil
+	}
+	// Fallback for non-TTY (piped input, CI).
+	line, err := stdinReader.ReadString('\n')
+	if err != nil && len(strings.TrimSpace(line)) == 0 {
+		return "", err
+	}
+	return strings.TrimSpace(line), nil
 }
 
 func runAccounts(opts *cliOptions) error {
@@ -671,6 +764,91 @@ func runAccounts(opts *cliOptions) error {
 		}
 		fmt.Printf("%-10s %-40s %-24s %-8s\n", a.AccountNumber, a.HashValue, truncate(nameByHash[a.HashValue], 24), flag)
 	}
+	return nil
+}
+
+func runAccountLink() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	// Check for existing token — determines which flow to use.
+	bt, _ := config.LoadBrokerToken()
+
+	if bt != nil {
+		// Authenticated flow: initiate link session via API.
+		return runAuthenticatedLink(cfg, bt)
+	}
+
+	// No token: anonymous PKCE flow (first-time user).
+	return runAnonymousLink(cfg)
+}
+
+// runAuthenticatedLink links a new Schwab account for an already-authenticated user.
+func runAuthenticatedLink(cfg *config.Config, bt *config.BrokerToken) error {
+	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
+	bc.AccessToken = bt.AccessToken
+	bc.RefreshToken = bt.RefreshToken
+	bc.TokenExpiry = bt.Expiry
+
+	ctx := context.Background()
+
+	fmt.Println("Requesting link session...")
+	authorizeURL, err := bc.InitiateLink(ctx, "schwab")
+	if err != nil {
+		var limErr *broker.AccountLimitError
+		if errors.As(err, &limErr) {
+			return fmt.Errorf("cannot link: %s", limErr.Message)
+		}
+		return fmt.Errorf("failed to initiate link: %w", err)
+	}
+
+	fmt.Println("Opening browser for Schwab authorization...")
+	fmt.Printf("If the browser doesn't open, visit:\n%s\n\n", authorizeURL)
+	broker.OpenBrowser(authorizeURL)
+
+	fmt.Print("Press Enter after completing authorization in your browser...")
+	stdinReader.ReadString('\n')
+
+	// Verify by fetching accounts.
+	var accounts []schwab.AccountNumber
+	if err := runWithSpinner("Verifying linked accounts", func() error {
+		var loadErr error
+		accounts, loadErr = bc.GetAccountNumbers(ctx)
+		return loadErr
+	}); err != nil {
+		return fmt.Errorf("failed to verify accounts: %w", err)
+	}
+
+	fmt.Printf("Account linked successfully. You have %d Schwab account(s).\n", len(accounts))
+	return nil
+}
+
+// runAnonymousLink performs PKCE OAuth for first-time users with no token.
+func runAnonymousLink(cfg *config.Config) error {
+	clientID := cfg.BrokerClientID
+	if clientID == "" {
+		return errors.New("broker_client_id not set in config; run tendies --config")
+	}
+
+	bc := broker.NewClient(cfg.BrokerURL, clientID)
+	ctx := context.Background()
+
+	fmt.Println("Opening browser for Schwab authorization...")
+	if err := bc.Login(ctx); err != nil {
+		return fmt.Errorf("schwab authorization failed: %w", err)
+	}
+
+	if err := config.SaveBrokerToken(&config.BrokerToken{
+		AccessToken:  bc.AccessToken,
+		RefreshToken: bc.RefreshToken,
+		Expiry:       bc.TokenExpiry,
+	}); err != nil {
+		return err
+	}
+
+	fmt.Printf("Account linked and logged in (token expires: %s).\n", bc.TokenExpiry.Local().Format(time.RFC3339))
 	return nil
 }
 
@@ -883,40 +1061,6 @@ func randomState() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
-}
-
-func parseOAuthInput(input string) (code string, state string, err error) {
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return "", "", errors.New("no authorization input provided")
-	}
-
-	// Parse query from various input formats — bare codes are rejected.
-	query := input
-	switch {
-	case strings.Contains(input, "://"):
-		u, parseErr := url.Parse(input)
-		if parseErr != nil {
-			return "", "", fmt.Errorf("failed to parse callback URL: %w", parseErr)
-		}
-		query = u.RawQuery
-	case strings.HasPrefix(input, "?"):
-		query = strings.TrimPrefix(input, "?")
-	case strings.Contains(input, "?"):
-		query = strings.SplitN(input, "?", 2)[1]
-	default:
-		return "", "", errors.New("paste the full callback URL (bare codes are not accepted)")
-	}
-
-	values, parseErr := url.ParseQuery(query)
-	if parseErr != nil {
-		return "", "", fmt.Errorf("failed to parse callback query: %w", parseErr)
-	}
-	code = values.Get("code")
-	if code == "" {
-		return "", "", errors.New("missing `code` in callback URL")
-	}
-	return code, values.Get("state"), nil
 }
 
 func validateTimeframeFlags(opts *cliOptions) error {
@@ -1386,6 +1530,14 @@ func classifyError(err error) (string, string) {
 	var subErr *broker.SubscriptionError
 	if errors.As(err, &subErr) {
 		return "subscription_required", subErr.Message
+	}
+	var rlErr *broker.RateLimitError
+	if errors.As(err, &rlErr) {
+		return "rate_limit_exceeded", rlErr.Message
+	}
+	var tfErr *broker.TimeframeError
+	if errors.As(err, &tfErr) {
+		return "timeframe_restricted", tfErr.Message
 	}
 
 	msg := err.Error()

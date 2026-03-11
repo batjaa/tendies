@@ -24,6 +24,19 @@ Route::middleware(['auth:api', 'subscribed'])->group(function () {
 });
 
 Route::middleware('auth:api')->group(function () {
+    Route::get('/v1/me', function (\Illuminate\Http\Request $request) {
+        $user = $request->user();
+        $sub = $user->subscription('default');
+
+        return response()->json([
+            'user' => $user->toAuthArray(),
+            'linked_accounts' => $user->tradingAccounts()->count(),
+            'subscription' => $sub
+                ? ['plan' => $sub->stripe_price, 'status' => $sub->pastDue() ? 'past_due' : 'active']
+                : null,
+            'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
+        ]);
+    });
     Route::get('/v1/subscription', [SubscriptionController::class, 'status']);
     Route::post('/v1/subscription/checkout', [SubscriptionController::class, 'checkout']);
     Route::post('/v1/subscription/portal', [SubscriptionController::class, 'portal']);
