@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'subscribed' => \App\Http\Middleware\EnsureSubscribed::class,
+            'rate-limit-cli' => \App\Http\Middleware\RateLimitCliQuery::class,
+            'restrict-timeframe' => \App\Http\Middleware\RestrictTimeframe::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
