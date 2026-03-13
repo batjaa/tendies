@@ -518,7 +518,16 @@ func runAccountCreate() error {
 	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
 	ctx := context.Background()
 
-	resp, err := bc.Register(ctx, name, email, pw)
+	// If there's an existing token (from account link), upgrade the anonymous
+	// account instead of creating a new one. This preserves linked trading accounts.
+	var resp *broker.AuthResponse
+	existing, _ := config.LoadBrokerToken()
+	if existing != nil && existing.AccessToken != "" {
+		bc.AccessToken = existing.AccessToken
+		resp, err = bc.Upgrade(ctx, name, email, pw)
+	} else {
+		resp, err = bc.Register(ctx, name, email, pw)
+	}
 	if err != nil {
 		return err
 	}
@@ -531,7 +540,9 @@ func runAccountCreate() error {
 	}
 
 	fmt.Printf("Account created. Welcome, %s! (tier: %s)\n", resp.User.Name, resp.User.Tier)
-	fmt.Println("Run `tendies account link` to connect your Schwab account.")
+	if existing == nil || existing.AccessToken == "" {
+		fmt.Println("Run `tendies account link` to connect your Schwab account.")
+	}
 	return nil
 }
 
@@ -588,6 +599,16 @@ func runAccountStatus() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
+	}
+
+	bt, _ := config.LoadBrokerToken()
+	if bt == nil || bt.AccessToken == "" {
+		fmt.Println("Not logged in.")
+		fmt.Println()
+		fmt.Println("  tendies account link     Connect a Schwab account (anonymous)")
+		fmt.Println("  tendies account create   Create an account with email/password")
+		fmt.Println("  tendies account login    Log in to an existing account")
+		return nil
 	}
 
 	bc, err := buildBrokerClient(cfg)

@@ -521,6 +521,79 @@ func (c *Client) Register(ctx context.Context, name, email, password string) (*A
 	})
 }
 
+// Upgrade converts an anonymous account (from account link) to a registered
+// account with email/password, preserving linked trading accounts.
+func (c *Client) Upgrade(ctx context.Context, name, email, password string) (*AuthResponse, error) {
+	payload := map[string]string{
+		"name":                  name,
+		"email":                 email,
+		"password":              password,
+		"password_confirmation": password,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", c.BrokerURL+"/api/v1/account/upgrade", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusUnprocessableEntity {
+		var valErr struct {
+			Message string              `json:"message"`
+			Errors  map[string][]string `json:"errors"`
+		}
+		if json.Unmarshal(respBody, &valErr) == nil {
+			for _, msgs := range valErr.Errors {
+				if len(msgs) > 0 {
+					return nil, fmt.Errorf("%s", msgs[0])
+				}
+			}
+			return nil, fmt.Errorf("%s", valErr.Message)
+		}
+	}
+
+	if resp.StatusCode == http.StatusConflict {
+		var errResp struct {
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(respBody, &errResp) == nil && errResp.Message != "" {
+			return nil, fmt.Errorf("%s", errResp.Message)
+		}
+		return nil, fmt.Errorf("account already registered")
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		msg := string(respBody)
+		if len(msg) > 200 {
+			msg = msg[:200] + "..."
+		}
+		return nil, fmt.Errorf("upgrade request failed (%d): %s", resp.StatusCode, msg)
+	}
+
+	var result AuthResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode auth response: %w", err)
+	}
+	return &result, nil
+}
+
 // AuthLogin authenticates with email/password and returns a PAT.
 func (c *Client) AuthLogin(ctx context.Context, email, password string) (*AuthResponse, error) {
 	return c.postAuth(ctx, "/api/auth/login", map[string]string{

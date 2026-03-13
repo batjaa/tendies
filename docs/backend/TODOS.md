@@ -61,3 +61,15 @@ Deferred work from the architecture review (2026-03-11). Each item was considere
 **Context:** Criteria for pruning: `users.email IS NULL` + `schwab_tokens.token_expires_at < now() - 30 days` + no Passport tokens used in 30 days. Should be safe to run as a scheduled command (`schedule:run` daily). Consider whether to delete the entire `User` + cascade, or just revoke tokens and keep the user for potential return (they'd re-auth via Schwab OAuth and get matched by account hash).
 
 **Depends on:** Phase 1 (TradingAccount model — need the schema settled first).
+
+---
+
+## 6. Wire Rate Limiting & Timeframe Middleware to Routes
+
+**What:** Apply `rate-limit-cli` and `restrict-timeframe` middleware to the transaction/account API routes. Replace `EnsureSubscribed` middleware — free users can query, just rate-limited.
+
+**Why:** The middleware exists and is aliased in `bootstrap/app.php`, but is not applied to any routes in `routes/api.php`. Free users currently hit `EnsureSubscribed` and get blocked entirely instead of being rate-limited.
+
+**Context:** Per the implementation plan (Phase 3.3), the route group should change from `['auth:api', 'subscribed']` to `['auth:api', 'rate-limit-cli', 'restrict-timeframe']`. Delete `EnsureSubscribed` middleware after switching. CLI already sends `X-Query-ID` and `X-Timezone` headers.
+
+**Depends on:** Phase 2 (auth endpoints working).
