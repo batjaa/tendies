@@ -44,6 +44,23 @@ See `.env.example` for all required variables. Key ones:
 - `SCHWAB_CLIENT_ID` / `SCHWAB_CLIENT_SECRET` — Schwab API credentials
 - `SCHWAB_REDIRECT_URL` — OAuth callback URL
 
+## Testing
+
+### Unit & Feature Tests
+
+```bash
+php artisan test
+```
+
+### E2E Tests (Playwright)
+
+```bash
+npx playwright install chromium   # first time only
+npx playwright test
+```
+
+Playwright uses `.env.e2e` (SQLite) and starts a local server on port 8899 automatically. See `playwright.config.ts` for details.
+
 ## Deployment
 
 Deployed via Laravel Forge. Push to `staging` or `main` branch triggers auto-deploy.
