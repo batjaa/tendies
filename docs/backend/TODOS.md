@@ -10,15 +10,9 @@ Done. `ProfileController` with `GET /api/v1/profile` + `PATCH /api/v1/profile` (
 
 ---
 
-## 2. Account CRUD (Rename / Unlink / Set-Primary via API)
+## 2. ~~Account CRUD (Rename / Unlink / Set-Primary via API)~~ ✅
 
-**What:** `PATCH /api/v1/accounts/{id}` (rename display_name), `DELETE /api/v1/accounts/{id}` (unlink + delete SchwabToken), `POST /api/v1/accounts/{id}/set-primary`.
-
-**Why:** Web app users need to manage their linked trading accounts. CLI handles `set-default` locally via config, but unlink/rename need server-side support.
-
-**Context:** `TradingAccount` model and relationships will exist after Phase 1. Unlink should cascade-delete the associated `SchwabToken` and `trading_account_hashes` rows. If the deleted account was primary, either auto-promote the next one or require the user to choose. Reject unlink if it's the user's only account (they'd be locked out of data).
-
-**Depends on:** Phase 1 (TradingAccount model).
+Done. `TradingAccountController` with list, rename, unlink (rejects last account, auto-promotes primary), and set-primary. Routes under `/api/v1/trading-accounts/`.
 
 ---
 

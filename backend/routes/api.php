@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TradingAccountController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WaitlistController;
 use Illuminate\Support\Facades\Route;
@@ -33,4 +34,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/v1/subscription/portal', [SubscriptionController::class, 'portal']);
     Route::post('/v1/link/initiate', [LinkController::class, 'initiate']);
     Route::post('/v1/account/upgrade', [AccountUpgradeController::class, 'upgrade']);
+    Route::get('/v1/trading-accounts', [TradingAccountController::class, 'index']);
+    Route::patch('/v1/trading-accounts/{tradingAccount}', [TradingAccountController::class, 'update']);
+    Route::delete('/v1/trading-accounts/{tradingAccount}', [TradingAccountController::class, 'destroy']);
+    Route::post('/v1/trading-accounts/{tradingAccount}/set-primary', [TradingAccountController::class, 'setPrimary']);
 });
