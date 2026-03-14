@@ -32,11 +32,11 @@
                 <li><a href="#features" class="nav-link text-content-muted no-underline text-sm hover:text-content">Features</a></li>
                 <li><a href="#cli" class="nav-link text-content-muted no-underline text-sm hover:text-content">CLI</a></li>
                 <li><a href="#menubar" class="nav-link text-content-muted no-underline text-sm hover:text-content">Menu Bar</a></li>
-                <li><a href="#pricing" class="nav-link text-content-muted no-underline text-sm hover:text-content">Pricing</a></li>
+                @unless($waitlistMode)<li><a href="#pricing" class="nav-link text-content-muted no-underline text-sm hover:text-content">Pricing</a></li>@endunless
                 <li><a href="#direct" class="nav-link text-content-muted no-underline text-sm hover:text-content">Direct Mode</a></li>
             </ul>
             <div class="flex items-center gap-3">
-                <a href="#pricing" class="bg-gain text-black px-[18px] py-2 rounded-lg font-semibold text-[0.85rem] no-underline transition-opacity hover:opacity-85">Get Started</a>
+                <a href="{{ $waitlistMode ? '#cli' : '#pricing' }}" class="bg-gain text-black px-[18px] py-2 rounded-lg font-semibold text-[0.85rem] no-underline transition-opacity hover:opacity-85">Get Started</a>
                 <button id="mobile-menu-btn" class="md:hidden text-content-muted p-1" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
@@ -46,7 +46,7 @@
             <li><a href="#features" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Features</a></li>
             <li><a href="#cli" class="block py-2 text-content-muted no-underline text-sm hover:text-content">CLI</a></li>
             <li><a href="#menubar" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Menu Bar</a></li>
-            <li><a href="#pricing" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Pricing</a></li>
+            @unless($waitlistMode)<li><a href="#pricing" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Pricing</a></li>@endunless
             <li><a href="#direct" class="block py-2 text-content-muted no-underline text-sm hover:text-content">Direct Mode</a></li>
         </ul>
     </div>
@@ -73,7 +73,7 @@
             </button>
         </div>
         <div class="flex gap-4 justify-center flex-wrap hero-enter hero-enter-5">
-            <a href="#pricing" class="bg-gain text-black px-7 py-3 rounded-[10px] font-semibold text-[0.95rem] no-underline transition-opacity hover:opacity-85">Get Started</a>
+            <a href="{{ $waitlistMode ? '#cli' : '#pricing' }}" class="bg-gain text-black px-7 py-3 rounded-[10px] font-semibold text-[0.95rem] no-underline transition-opacity hover:opacity-85">Get Started</a>
             <a href="https://github.com/batjaa/tendies" class="border border-edge text-content-muted px-7 py-3 rounded-[10px] font-medium text-[0.95rem] no-underline transition-all hover:text-content hover:border-content-dim">View on GitHub</a>
         </div>
     </div>
@@ -327,6 +327,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
 </section>
 
 {{-- ────────── Pricing ────────── --}}
+@unless($waitlistMode)
 <section class="relative z-[1] py-20" id="pricing">
     <div class="max-w-[1120px] mx-auto px-6 text-center">
         <div class="reveal">
@@ -366,6 +367,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
         </div>
     </div>
 </section>
+@endunless
 
 {{-- ────────── Footer ────────── --}}
 <footer class="relative z-[1] py-12 border-t border-edge-subtle mt-10">

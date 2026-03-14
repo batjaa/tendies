@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('welcome', [
+        'waitlistMode' => (bool) nova_get_setting('waitlist_mode'),
+    ]);
 });
 
 Route::get('/auth/schwab/callback', [SchwabCallbackController::class, 'callback'])
