@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Outl1ne\NovaSettings\Models\Settings;
 use Tests\TestCase;
 use Tests\Traits\CreatesPersonalAccessClient;
 
@@ -15,6 +16,7 @@ class AuthRegisterTest extends TestCase
     {
         parent::setUp();
         $this->createPersonalAccessClient();
+        Settings::updateOrCreate(['key' => 'waitlist_mode'], ['value' => false]);
     }
 
     public function test_registers_new_user_and_returns_token(): void
@@ -68,5 +70,20 @@ class AuthRegisterTest extends TestCase
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['name', 'email', 'password']);
+    }
+
+    public function test_blocks_registration_when_waitlist_mode_enabled(): void
+    {
+        Settings::updateOrCreate(['key' => 'waitlist_mode'], ['value' => true]);
+
+        $response = $this->postJson('/api/auth/register', [
+            'name' => 'Jane Doe',
+            'email' => 'jane@example.com',
+            'password' => 'securepass',
+            'password_confirmation' => 'securepass',
+        ]);
+
+        $response->assertForbidden()
+            ->assertJson(['error' => 'waitlist_active']);
     }
 }

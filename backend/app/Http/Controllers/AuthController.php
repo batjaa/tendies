@@ -11,6 +11,13 @@ class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
+        if (nova_get_setting('waitlist_mode')) {
+            return response()->json([
+                'error' => 'waitlist_active',
+                'message' => 'Registration is currently invite-only. Join the waitlist at mytendies.app.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',

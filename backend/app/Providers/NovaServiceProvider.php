@@ -5,8 +5,10 @@ namespace App\Providers;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Fortify\Features;
+use Laravel\Nova\Fields\Boolean;
 use Laravel\Nova\Nova;
 use Laravel\Nova\NovaApplicationServiceProvider;
+use Outl1ne\NovaSettings\NovaSettings;
 
 class NovaServiceProvider extends NovaApplicationServiceProvider
 {
@@ -17,7 +19,10 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
     {
         parent::boot();
 
-        //
+        NovaSettings::addSettingsFields([
+            Boolean::make('Waitlist Mode', 'waitlist_mode')
+                ->help('When enabled, new users must join the waitlist before accessing the app.'),
+        ]);
     }
 
     /**
@@ -77,7 +82,9 @@ class NovaServiceProvider extends NovaApplicationServiceProvider
      */
     public function tools(): array
     {
-        return [];
+        return [
+            new NovaSettings,
+        ];
     }
 
     /**
