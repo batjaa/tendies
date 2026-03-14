@@ -329,10 +329,10 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
 {{-- ────────── Waitlist ────────── --}}
 @if($waitlistMode)
 <section class="relative z-[1] py-20" id="waitlist">
-    <div class="max-w-[580px] mx-auto px-6 text-center">
+    <div class="max-w-[520px] mx-auto px-6 text-center">
         <div class="reveal">
             <div class="font-mono text-[0.8rem] text-gain uppercase tracking-wider mb-4">Early Access</div>
-            <h2 class="font-display font-extrabold tracking-tight mb-4" style="font-size:clamp(1.75rem,3.5vw,2.5rem)">Get early access to Tendies Pro.</h2>
+            <h2 class="font-display font-extrabold tracking-tight mb-4 text-[1.5rem] md:text-[1.85rem]">Get early access to Tendies Pro.</h2>
             <p class="text-content-muted text-[0.95rem] font-light leading-relaxed mb-8">The CLI is free and open source. Join the waitlist for the macOS menu bar app with managed auth, auto-refresh, and zero setup.</p>
         </div>
 
@@ -342,21 +342,19 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
         </div>
 
         <div id="waitlist-form-wrapper" class="reveal">
-            <form id="waitlist-form" class="flex flex-col gap-3 max-w-[440px] mx-auto">
-                <input type="text" name="name" placeholder="Name" required
-                    class="bg-surface-raised border border-edge-subtle rounded-xl px-4 py-3 text-[0.9rem] text-content placeholder:text-content-dim focus:outline-none focus:border-edge transition-colors">
-                <input type="email" name="email" placeholder="Email" required
-                    class="bg-surface-raised border border-edge-subtle rounded-xl px-4 py-3 text-[0.9rem] text-content placeholder:text-content-dim focus:outline-none focus:border-edge transition-colors">
+            <form id="waitlist-form" class="inline-flex gap-2">
+                <input type="email" name="email" placeholder="you@email.com" required
+                    class="w-[220px] bg-surface-raised border border-edge-subtle rounded-xl px-4 py-3 text-[0.9rem] text-content placeholder:text-content-dim focus:outline-none focus:border-edge transition-colors">
                 <button type="submit" id="waitlist-btn"
-                    class="bg-gain text-black px-7 py-3 rounded-xl font-semibold text-[0.9rem] transition-opacity hover:opacity-85 cursor-pointer border-0 mt-1">
-                    Join the Waitlist
+                    class="bg-gain text-black px-5 py-3 rounded-xl font-semibold text-[0.85rem] transition-opacity hover:opacity-85 cursor-pointer border-0 whitespace-nowrap">
+                    Join Waitlist
                 </button>
             </form>
             <p id="waitlist-error" class="text-red-400 text-[0.85rem] mt-3 hidden"></p>
         </div>
 
         <div id="waitlist-success" class="hidden">
-            <div class="bg-surface-raised border border-gain/20 rounded-xl px-6 py-8 max-w-[440px] mx-auto">
+            <div class="bg-surface-raised border border-gain/20 rounded-xl px-6 py-8">
                 <div class="text-gain text-2xl mb-2">&#10003;</div>
                 <p class="text-content font-semibold text-[1rem] mb-1">You're on the list!</p>
                 <p class="text-content-muted text-[0.88rem] font-light">We'll send you an invite when a spot opens up.</p>
@@ -499,7 +497,6 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({
-                        name: waitlistForm.name.value.trim(),
                         email: waitlistForm.email.value.trim(),
                     }),
                 });

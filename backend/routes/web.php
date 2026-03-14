@@ -6,8 +6,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    $waitlistMode = (bool) nova_get_setting('waitlist_mode');
+
     return view('welcome', [
-        'waitlistMode' => (bool) nova_get_setting('waitlist_mode'),
+        'waitlistMode' => $waitlistMode,
+        'waitlistCount' => $waitlistMode ? \App\Models\WaitlistEntry::where('status', 'pending')->count() : 0,
     ]);
 });
 

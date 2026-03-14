@@ -13,7 +13,6 @@ class WaitlistSignupTest extends TestCase
     public function test_signup_creates_pending_entry(): void
     {
         $response = $this->postJson('/api/waitlist/signup', [
-            'name' => 'Jane Doe',
             'email' => 'jane@example.com',
         ]);
 
@@ -31,7 +30,6 @@ class WaitlistSignupTest extends TestCase
         WaitlistEntry::factory()->create(['email' => 'taken@example.com']);
 
         $response = $this->postJson('/api/waitlist/signup', [
-            'name' => 'Dup',
             'email' => 'taken@example.com',
         ]);
 
@@ -44,6 +42,6 @@ class WaitlistSignupTest extends TestCase
         $response = $this->postJson('/api/waitlist/signup', []);
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['name', 'email']);
+            ->assertJsonValidationErrors(['email']);
     }
 }
