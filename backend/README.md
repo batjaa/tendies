@@ -33,6 +33,10 @@ php artisan passport:client --personal --name="Tendies CLI Personal Access"
 
 Both must exist on every environment (local, staging, production).
 
+### Admin Settings
+
+Site settings (e.g., waitlist mode) are managed via Nova at `/nova/nova-settings`. Access requires a `@mytendies.app` email. Settings are stored in the `nova_settings` table and seeded by migrations.
+
 ### Environment Variables
 
 See `.env.example` for all required variables. Key ones:
