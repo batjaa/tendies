@@ -268,7 +268,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                 <ul class="flex flex-col gap-2.5 list-none">
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🔐</span> Schwab tokens encrypted at rest (AES-256-CBC)</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">⏱</span> Transaction data cached temporarily (5 min for today, 7 days for past dates) to reduce API calls</li>
-                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">👤</span> No real names or emails stored — accounts identified by token hash</li>
+                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">👤</span> Account info stored only for authentication — trading data never linked to your identity</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🚫</span> Trading data never sold, shared, or used for analytics</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🗑</span> Cache entries expire automatically — no permanent storage of trades</li>
                 </ul>
@@ -312,7 +312,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">3</div>
                 <div>
                     <h4 class="font-display font-bold text-[0.95rem] mb-1">Authenticate directly</h4>
-                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies auth login --direct</code> to authorize with Schwab. Token goes to your macOS keychain.</p>
+                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies --direct</code> to authorize with Schwab. Token goes to your macOS keychain.</p>
                 </div>
             </div>
             <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
@@ -325,6 +325,48 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
         </div>
     </div>
 </section>
+
+{{-- ────────── Waitlist ────────── --}}
+@if($waitlistMode)
+<section class="relative z-[1] py-20" id="waitlist">
+    <div class="max-w-[580px] mx-auto px-6 text-center">
+        <div class="reveal">
+            <div class="font-mono text-[0.8rem] text-gain uppercase tracking-wider mb-4">Early Access</div>
+            <h2 class="font-display font-extrabold tracking-tight mb-4" style="font-size:clamp(1.75rem,3.5vw,2.5rem)">Get early access to Tendies Pro.</h2>
+            <p class="text-content-muted text-[0.95rem] font-light leading-relaxed mb-8">The CLI is free and open source. Join the waitlist for the macOS menu bar app with managed auth, auto-refresh, and zero setup.</p>
+        </div>
+
+        <div class="flex items-center justify-center gap-2 mb-8 reveal">
+            <span class="w-2.5 h-2.5 rounded-full bg-gain inline-block"></span>
+            <span class="text-content-muted text-[0.9rem]"><strong class="text-content">{{ $waitlistCount }}</strong> {{ Str::plural('person', $waitlistCount) }} on the waitlist</span>
+        </div>
+
+        <div id="waitlist-form-wrapper" class="reveal">
+            <form id="waitlist-form" class="flex flex-col gap-3 max-w-[440px] mx-auto">
+                <input type="text" name="name" placeholder="Name" required
+                    class="bg-surface-raised border border-edge-subtle rounded-xl px-4 py-3 text-[0.9rem] text-content placeholder:text-content-dim focus:outline-none focus:border-edge transition-colors">
+                <input type="email" name="email" placeholder="Email" required
+                    class="bg-surface-raised border border-edge-subtle rounded-xl px-4 py-3 text-[0.9rem] text-content placeholder:text-content-dim focus:outline-none focus:border-edge transition-colors">
+                <button type="submit" id="waitlist-btn"
+                    class="bg-gain text-black px-7 py-3 rounded-xl font-semibold text-[0.9rem] transition-opacity hover:opacity-85 cursor-pointer border-0 mt-1">
+                    Join the Waitlist
+                </button>
+            </form>
+            <p id="waitlist-error" class="text-red-400 text-[0.85rem] mt-3 hidden"></p>
+        </div>
+
+        <div id="waitlist-success" class="hidden">
+            <div class="bg-surface-raised border border-gain/20 rounded-xl px-6 py-8 max-w-[440px] mx-auto">
+                <div class="text-gain text-2xl mb-2">&#10003;</div>
+                <p class="text-content font-semibold text-[1rem] mb-1">You're on the list!</p>
+                <p class="text-content-muted text-[0.88rem] font-light">We'll send you an invite when a spot opens up.</p>
+            </div>
+        </div>
+
+        <p class="text-content-dim text-[0.85rem] mt-8 reveal">The CLI is free today — <a href="#cli" class="text-content no-underline font-semibold hover:text-gain transition-colors">install it now</a>.</p>
+    </div>
+</section>
+@endif
 
 {{-- ────────── Pricing ────────── --}}
 @unless($waitlistMode)
@@ -440,6 +482,46 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
             document.getElementById('mobile-menu').classList.add('hidden');
         });
     });
+
+    // Waitlist signup
+    const waitlistForm = document.getElementById('waitlist-form');
+    if (waitlistForm) {
+        waitlistForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('waitlist-btn');
+            const errorEl = document.getElementById('waitlist-error');
+            errorEl.classList.add('hidden');
+            btn.disabled = true;
+            btn.textContent = 'Joining…';
+
+            try {
+                const res = await fetch('/api/waitlist/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        name: waitlistForm.name.value.trim(),
+                        email: waitlistForm.email.value.trim(),
+                    }),
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    const msg = data.errors
+                        ? Object.values(data.errors).flat().join(' ')
+                        : (data.message || 'Something went wrong.');
+                    throw new Error(msg);
+                }
+
+                document.getElementById('waitlist-form-wrapper').classList.add('hidden');
+                document.getElementById('waitlist-success').classList.remove('hidden');
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Join the Waitlist';
+            }
+        });
+    }
 </script>
 
 </body>
