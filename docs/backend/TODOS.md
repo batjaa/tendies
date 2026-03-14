@@ -4,15 +4,9 @@ Deferred work from the architecture review (2026-03-11). Each item was considere
 
 ---
 
-## 1. Profile Endpoints
+## 1. ~~Profile Endpoints~~ ✅
 
-**What:** `GET /api/v1/profile` and `PATCH /api/v1/profile` — return/update user info (name, email, tier, is_anonymous, trial_ends_at).
-
-**Why:** The web app needs a way to display and edit user profile. CLI `tendies account` could also use this to show current user info.
-
-**Context:** The `User` model will already have `tier()`, `isAnonymous()` after Phase 1. The endpoints are thin controllers — mostly serialization. `PATCH` should only allow name changes initially; email changes need verification flow (see TODO #3).
-
-**Depends on:** Phase 1 (TradingAccount model).
+Done. `ProfileController` with `GET /api/v1/profile` + `PATCH /api/v1/profile` (name-only updates). `/api/v1/me` forwards to the same controller for backward compat.
 
 ---
 
