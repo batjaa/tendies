@@ -10,14 +10,11 @@ class ProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
-        $sub = $user->subscription('default');
 
         return response()->json([
             'user' => $user->toAuthArray(),
             'linked_accounts' => $user->tradingAccounts()->count(),
-            'subscription' => $sub
-                ? ['plan' => $sub->stripe_price, 'status' => $sub->pastDue() ? 'past_due' : 'active']
-                : null,
+            'subscription' => $user->subscriptionSummary(),
             'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
         ]);
     }

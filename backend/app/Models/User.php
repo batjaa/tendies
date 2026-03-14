@@ -80,4 +80,20 @@ class User extends Authenticatable
             'tier' => $this->tier(),
         ];
     }
+
+    public function subscriptionSummary(): ?array
+    {
+        $sub = $this->subscription('default');
+        if (! $sub) {
+            return null;
+        }
+
+        return [
+            'plan' => match ($sub->stripe_price) {
+                config('services.stripe.yearly_price_id') => 'yearly',
+                default => 'monthly',
+            },
+            'status' => $sub->pastDue() ? 'past_due' : 'active',
+        ];
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TradingAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TradingAccountController extends Controller
 {
@@ -20,9 +21,7 @@ class TradingAccountController extends Controller
 
     public function update(Request $request, TradingAccount $tradingAccount): JsonResponse
     {
-        if ($tradingAccount->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('update', $tradingAccount);
 
         $validated = $request->validate([
             'display_name' => 'required|string|max:255',
@@ -35,38 +34,40 @@ class TradingAccountController extends Controller
 
     public function destroy(Request $request, TradingAccount $tradingAccount): JsonResponse
     {
-        if ($tradingAccount->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $tradingAccount);
 
         $user = $request->user();
 
-        if ($user->tradingAccounts()->count() <= 1) {
-            return response()->json([
-                'error' => 'last_account',
-                'message' => 'Cannot unlink your only trading account.',
-            ], 409);
-        }
+        return DB::transaction(function () use ($user, $tradingAccount) {
+            $count = $user->tradingAccounts()->lockForUpdate()->count();
 
-        $wasPrimary = $tradingAccount->is_primary;
-        $tradingAccount->delete(); // Cascades to schwab_token + hashes via FK
+            if ($count <= 1) {
+                return response()->json([
+                    'error' => 'last_account',
+                    'message' => 'Cannot unlink your only trading account.',
+                ], 409);
+            }
 
-        if ($wasPrimary) {
-            $user->tradingAccounts()->oldest()->first()?->update(['is_primary' => true]);
-        }
+            $wasPrimary = $tradingAccount->is_primary;
+            $tradingAccount->delete();
 
-        return response()->json(['message' => 'Account unlinked.']);
+            if ($wasPrimary) {
+                $user->tradingAccounts()->oldest()->first()?->update(['is_primary' => true]);
+            }
+
+            return response()->json(['message' => 'Account unlinked.']);
+        });
     }
 
     public function setPrimary(Request $request, TradingAccount $tradingAccount): JsonResponse
     {
-        if ($tradingAccount->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('setPrimary', $tradingAccount);
 
-        $request->user()->tradingAccounts()->update(['is_primary' => false]);
-        $tradingAccount->update(['is_primary' => true]);
+        DB::transaction(function () use ($request, $tradingAccount) {
+            $request->user()->tradingAccounts()->update(['is_primary' => false]);
+            $tradingAccount->update(['is_primary' => true]);
+        });
 
-        return response()->json($tradingAccount);
+        return response()->json($tradingAccount->refresh());
     }
 }

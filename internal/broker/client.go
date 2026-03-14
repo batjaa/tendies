@@ -518,80 +518,18 @@ func (c *Client) Register(ctx context.Context, name, email, password string) (*A
 		"email":                 email,
 		"password":              password,
 		"password_confirmation": password,
-	})
+	}, "")
 }
 
 // Upgrade converts an anonymous account (from account link) to a registered
 // account with email/password, preserving linked trading accounts.
 func (c *Client) Upgrade(ctx context.Context, name, email, password string) (*AuthResponse, error) {
-	payload := map[string]string{
+	return c.postAuth(ctx, "/api/v1/account/upgrade", map[string]string{
 		"name":                  name,
 		"email":                 email,
 		"password":              password,
 		"password_confirmation": password,
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", c.BrokerURL+"/api/v1/account/upgrade", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode == http.StatusUnprocessableEntity {
-		var valErr struct {
-			Message string              `json:"message"`
-			Errors  map[string][]string `json:"errors"`
-		}
-		if json.Unmarshal(respBody, &valErr) == nil {
-			for _, msgs := range valErr.Errors {
-				if len(msgs) > 0 {
-					return nil, fmt.Errorf("%s", msgs[0])
-				}
-			}
-			return nil, fmt.Errorf("%s", valErr.Message)
-		}
-	}
-
-	if resp.StatusCode == http.StatusConflict {
-		var errResp struct {
-			Message string `json:"message"`
-		}
-		if json.Unmarshal(respBody, &errResp) == nil && errResp.Message != "" {
-			return nil, fmt.Errorf("%s", errResp.Message)
-		}
-		return nil, fmt.Errorf("account already registered")
-	}
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		msg := string(respBody)
-		if len(msg) > 200 {
-			msg = msg[:200] + "..."
-		}
-		return nil, fmt.Errorf("upgrade request failed (%d): %s", resp.StatusCode, msg)
-	}
-
-	var result AuthResponse
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, fmt.Errorf("failed to decode auth response: %w", err)
-	}
-	return &result, nil
+	}, c.AccessToken)
 }
 
 // AuthLogin authenticates with email/password and returns a PAT.
@@ -599,11 +537,12 @@ func (c *Client) AuthLogin(ctx context.Context, email, password string) (*AuthRe
 	return c.postAuth(ctx, "/api/auth/login", map[string]string{
 		"email":    email,
 		"password": password,
-	})
+	}, "")
 }
 
-// postAuth sends an unauthenticated POST to an auth endpoint.
-func (c *Client) postAuth(ctx context.Context, path string, payload map[string]string) (*AuthResponse, error) {
+// postAuth sends a POST to an auth endpoint and decodes an AuthResponse.
+// If bearerToken is non-empty, an Authorization header is added.
+func (c *Client) postAuth(ctx context.Context, path string, payload map[string]string, bearerToken string) (*AuthResponse, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -615,6 +554,9 @@ func (c *Client) postAuth(ctx context.Context, path string, payload map[string]s
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	if bearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+bearerToken)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -641,6 +583,16 @@ func (c *Client) postAuth(ctx context.Context, path string, payload map[string]s
 			}
 			return nil, fmt.Errorf("%s", valErr.Message)
 		}
+	}
+
+	if resp.StatusCode == http.StatusConflict {
+		var errResp struct {
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(respBody, &errResp) == nil && errResp.Message != "" {
+			return nil, fmt.Errorf("%s", errResp.Message)
+		}
+		return nil, fmt.Errorf("account already registered")
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized {

@@ -11,16 +11,14 @@ class SubscriptionController extends Controller
         $user = $request->user();
 
         if ($user->subscribed('default')) {
-            $subscription = $user->subscription('default');
-            $status = $subscription->pastDue() ? 'past_due' : 'active';
+            $summary = $user->subscriptionSummary();
 
             return response()->json([
-                'status' => $status,
+                'status' => $summary['status'],
                 'trial_ends_at' => $user->trial_ends_at?->toIso8601String(),
-                'subscription' => [
-                    'plan' => $this->planName($subscription->stripe_price),
-                    'ends_at' => $subscription->ends_at?->toIso8601String(),
-                ],
+                'subscription' => array_merge($summary, [
+                    'ends_at' => $user->subscription('default')->ends_at?->toIso8601String(),
+                ]),
             ]);
         }
 
@@ -66,11 +64,4 @@ class SubscriptionController extends Controller
         return response()->json(['portal_url' => $url]);
     }
 
-    private function planName(?string $priceId): string
-    {
-        return match ($priceId) {
-            config('services.stripe.yearly_price_id') => 'yearly',
-            default => 'monthly',
-        };
-    }
 }
