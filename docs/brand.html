@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tendies — Design System & Brand Guidelines</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍗</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+    --bg: #09090b;
+    --bg-raised: #131316;
+    --bg-card: #18181b;
+    --border: #27272a;
+    --border-subtle: #1e1e21;
+    --text: #fafafa;
+    --text-muted: #a1a1aa;
+    --text-dim: #71717a;
+    --green: #22c55e;
+    --green-muted: #16a34a;
+    --green-glow: rgba(34, 197, 94, 0.15);
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --font-display: 'Bricolage Grotesque', sans-serif;
+    --font-body: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-ui: 'DM Sans', -apple-system, sans-serif;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Sidebar + layout ── */
+.page { display: flex; min-height: 100vh; }
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    padding: 32px 0 32px 24px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-subtle);
+    background: var(--bg);
+    z-index: 10;
+}
+.sidebar-logo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.sidebar-logo span { font-size: 1.2rem; }
+.sidebar-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+}
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+.sidebar nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 400;
+    padding: 6px 12px 6px 0;
+    border-radius: 6px;
+    transition: color 0.15s;
+}
+.sidebar nav a:hover { color: var(--text-muted); }
+.sidebar nav a.active { color: var(--green); }
+.sidebar nav .group-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 20px;
+    margin-bottom: 4px;
+    padding-left: 0;
+}
+
+.main {
+    margin-left: 240px;
+    flex: 1;
+    max-width: 960px;
+    padding: 48px 56px 120px;
+}
+
+/* ── Sections ── */
+section { margin-bottom: 80px; }
+section:last-child { margin-bottom: 0; }
+
+.section-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+}
+h2 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+.section-intro {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 300;
+    line-height: 1.7;
+    max-width: 560px;
+    margin-bottom: 40px;
+}
+h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    margin-top: 40px;
+}
+h3:first-child { margin-top: 0; }
+
+p.note {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    font-weight: 300;
+    line-height: 1.6;
+    margin-top: 12px;
+}
+
+/* ── Hero identity ── */
+.brand-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 48px;
+}
+.brand-icon {
+    font-size: 4rem;
+    line-height: 1;
+}
+.brand-name {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+.brand-tagline {
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ── Color swatches ── */
+.swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+}
+.swatch {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+}
+.swatch-color {
+    height: 72px;
+    position: relative;
+}
+.swatch-info {
+    padding: 10px 12px;
+    background: var(--bg-raised);
+}
+.swatch-name {
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+.swatch-value {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+}
+
+/* ── Paired swatches (dark/light) ── */
+.swatch-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.swatch-pair .swatch-color { height: 56px; }
+
+/* ── Typography specimens ── */
+.type-specimen {
+    margin-bottom: 32px;
+    padding: 28px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+}
+.type-specimen .sample {
+    margin-bottom: 16px;
+    line-height: 1.2;
+}
+.type-specimen .meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.type-specimen .meta span {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    padding: 3px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+}
+
+/* ── Scale table ── */
+.scale-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+    font-size: 0.82rem;
+}
+.scale-table th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.scale-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
+}
+.scale-table td:first-child { color: var(--text-muted); }
+.scale-table .mono { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); }
+
+/* ── Component examples ── */
+.component-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.component-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+/* Button demos */
+.btn-demo-primary {
+    background: var(--green);
+    color: #000;
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: inline-block;
+}
+.btn-demo-primary:hover { opacity: 0.85; }
+.btn-demo-secondary {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+}
+.btn-demo-secondary:hover { color: var(--text); border-color: var(--text-dim); }
+.btn-demo-nav {
+    background: var(--green);
+    color: #000;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    font-family: var(--font-body);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+}
+.btn-demo-copy {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-family: var(--font-body);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.btn-demo-outline {
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    background: transparent;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+}
+
+/* ── Card demos ── */
+.card-demo {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 28px;
+    transition: border-color 0.3s;
+}
+.card-demo:hover { border-color: var(--border); }
+.card-demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+/* ── Terminal demo ── */
+.terminal-demo {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    margin-bottom: 24px;
+}
+.terminal-demo .chrome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #161b22;
+    border-bottom: 1px solid #21262d;
+}
+.terminal-demo .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+}
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.terminal-demo .title {
+    flex: 1;
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: #8b949e;
+    margin-right: 52px;
+}
+.terminal-demo .body {
+    padding: 18px;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    line-height: 1.65;
+    color: #c9d1d9;
+}
+.t-prompt { color: #22c55e; }
+.t-cmd { color: #f0f6fc; }
+.t-dim { color: #6e7681; }
+.t-gain { color: #3fb950; }
+.t-loss { color: #f85149; }
+.t-label { color: #8b949e; }
+
+/* ── Popover demo ── */
+.popover-demo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+.mac-bar {
+    background: #1c1c1e;
+    border-radius: 10px;
+    padding: 6px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 0.8rem;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #e5e5e7;
+}
+.mac-bar .pnl-label { font-weight: 500; }
+.mac-bar .sys { color: #98989d; display: flex; gap: 12px; font-size: 0.75rem; }
+
+.popover-demo {
+    width: 300px;
+    border-radius: 14px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.popover-dark {
+    background: rgba(44, 44, 46, 0.95);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.05);
+}
+.popover-light {
+    background: rgba(246, 246, 248, 0.97);
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.06);
+    color: rgba(0,0,0,0.88);
+}
+.pop-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 8px;
+}
+.pop-header .name { font-weight: 600; font-size: 0.85rem; }
+.pop-header .acts { color: #98989d; font-size: 0.85rem; display: flex; gap: 10px; }
+.popover-light .pop-header .acts { color: rgba(0,0,0,0.35); }
+.pop-div { height: 1px; margin: 0 12px; }
+.popover-dark .pop-div { background: rgba(255,255,255,0.06); }
+.popover-light .pop-div { background: rgba(0,0,0,0.06); }
+.pop-rows { padding: 8px; }
+.pop-row {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    gap: 4px;
+}
+.pop-row.active-dark { background: rgba(255,255,255,0.06); }
+.pop-row.active-light { background: rgba(0,0,0,0.04); }
+.pop-row .lbl { font-weight: 500; }
+.popover-light .pop-row .lbl { color: rgba(0,0,0,0.88); }
+.pop-row .pnl { font-variant-numeric: tabular-nums; font-weight: 500; }
+.pop-row .trades { font-size: 0.72rem; text-align: right; }
+.popover-dark .pop-row .trades { color: #98989d; }
+.popover-light .pop-row .trades { color: rgba(0,0,0,0.35); }
+.pop-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 12px;
+    font-size: 0.72rem;
+}
+.popover-dark .pop-footer { color: #98989d; }
+.popover-light .pop-footer { color: rgba(0,0,0,0.35); }
+
+/* ── Spacing ruler ── */
+.spacing-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+.spacing-bar {
+    background: var(--green);
+    opacity: 0.3;
+    height: 24px;
+    border-radius: 4px;
+}
+.spacing-val {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    min-width: 48px;
+}
+.spacing-use {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* ── Radius demo ── */
+.radius-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.radius-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.radius-box {
+    width: 72px;
+    height: 52px;
+    border: 2px solid var(--green);
+    opacity: 0.5;
+}
+.radius-val {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+}
+
+/* ── Data format specimens ── */
+.format-row {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    margin-bottom: 12px;
+}
+.format-context {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    min-width: 100px;
+}
+.format-value {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 500;
+}
+
+/* ── Principles ── */
+.principles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.principle {
+    padding: 24px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+}
+.principle-num {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.principle h4 {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.principle p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.55;
+}
+
+/* ── Voice examples ── */
+.voice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.voice-card {
+    padding: 20px;
+    border-radius: 10px;
+}
+.voice-do {
+    background: rgba(34, 197, 94, 0.06);
+    border: 1px solid rgba(34, 197, 94, 0.12);
+}
+.voice-dont {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.12);
+}
+.voice-card .badge {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    display: block;
+}
+.voice-do .badge { color: var(--green); }
+.voice-dont .badge { color: var(--red); }
+.voice-card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.55;
+}
+
+/* ── Dot grid bg ── */
+.dot-grid-demo {
+    position: relative;
+    height: 140px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 24px;
+    background: var(--bg);
+}
+.dot-grid-demo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, #27272a 0.8px, transparent 0.8px);
+    background-size: 32px 32px;
+    opacity: 0.3;
+    mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 70%);
+}
+.dot-grid-demo::after {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 200px;
+    background: radial-gradient(ellipse, rgba(34,197,94,0.12) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* ── Icon grid ── */
+.icon-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 80px;
+}
+.icon-item .emoji { font-size: 1.8rem; }
+.icon-item .label {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-align: center;
+}
+
+/* ── Animation demo ── */
+.anim-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.anim-item {
+    padding: 20px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    text-align: center;
+}
+.anim-item .visual {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+.anim-item .anim-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+.anim-item .anim-spec {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+}
+
+/* Spinning arrow */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-demo { animation: spin 0.8s linear infinite; display: inline-block; }
+
+/* Chevron rotate */
+.chevron-demo {
+    display: inline-block;
+    transition: transform 0.15s ease-in-out;
+    cursor: pointer;
+}
+.chevron-demo:hover { transform: rotate(90deg); }
+
+/* Reveal demo */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.reveal-demo {
+    animation: fadeUp 0.7s ease both;
+    animation-play-state: paused;
+}
+.reveal-demo.play { animation-play-state: running; }
+
+/* ── Platform table ── */
+.platform-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-size: 0.82rem;
+}
+.platform-table th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-raised);
+}
+.platform-table th:first-child { border-radius: 8px 0 0 0; }
+.platform-table th:last-child { border-radius: 0 8px 0 0; }
+.platform-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: top;
+}
+.platform-table td:first-child {
+    font-weight: 500;
+}
+.platform-table .mono-sm {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 32px 20px 80px; }
+    .card-demo-grid { grid-template-columns: 1fr; }
+    .principles-grid { grid-template-columns: 1fr; }
+    .voice-grid { grid-template-columns: 1fr; }
+    .anim-grid { grid-template-columns: 1fr 1fr; }
+    .swatch-pair { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══════ Sidebar ═══════ -->
+<aside class="sidebar">
+    <div class="sidebar-logo"><span>🍗</span> tendies</div>
+    <div class="sidebar-sub">Design System</div>
+    <nav>
+        <a href="#identity">Brand Identity</a>
+        <a href="#voice">Voice & Tone</a>
+
+        <div class="group-label">Foundations</div>
+        <a href="#colors">Colors</a>
+        <a href="#typography">Typography</a>
+        <a href="#spacing">Spacing & Layout</a>
+        <a href="#motion">Motion</a>
+        <a href="#icons">Iconography</a>
+
+        <div class="group-label">Components</div>
+        <a href="#buttons">Buttons</a>
+        <a href="#cards">Cards</a>
+        <a href="#terminal">Terminal Block</a>
+        <a href="#popover">Menu Bar Popover</a>
+        <a href="#dot-grid">Dot Grid</a>
+
+        <div class="group-label">Patterns</div>
+        <a href="#data-format">Data Formatting</a>
+        <a href="#platforms">Platform Matrix</a>
+        <a href="#principles">Principles</a>
+    </nav>
+</aside>
+
+<!-- ═══════ Main ═══════ -->
+<main class="main">
+
+<!-- ────── Brand Identity ────── -->
+<section id="identity">
+    <div class="brand-hero">
+        <div class="brand-icon">🍗</div>
+        <div class="brand-name">tendies</div>
+        <div class="brand-tagline">Your P&L, always visible.</div>
+    </div>
+
+    <div class="section-label">Identity</div>
+    <h2>Brand Mark & Name</h2>
+    <p class="section-intro">
+        Tendies is a realized P&L tracker for Schwab day traders. The brand is the 🍗 chicken leg emoji paired with a lowercase wordmark in Bricolage Grotesque. No custom logo file — the emoji <em>is</em> the logo.
+    </p>
+
+    <h3>Logo Usage</h3>
+    <div class="component-row" style="gap:40px; margin-bottom:32px">
+        <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:1.6rem">🍗</span>
+            <span style="font-family:var(--font-display);font-weight:700;font-size:1.4rem">tendies</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:var(--bg-raised);padding:8px 16px;border-radius:8px;border:1px solid var(--border-subtle)">
+            <span style="font-size:1.4rem">🍗</span>
+            <span style="font-family:var(--font-display);font-weight:700;font-size:1.2rem">tendies</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#fafafa;padding:8px 16px;border-radius:8px">
+            <span style="font-size:1.4rem">🍗</span>
+            <span style="font-family:var(--font-display);font-weight:700;font-size:1.2rem;color:#09090b">tendies</span>
+        </div>
+    </div>
+
+    <h3>Favicon</h3>
+    <p class="note">SVG-embedded emoji. No external asset file needed.</p>
+    <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-dim);background:var(--bg-raised);padding:12px 16px;border-radius:8px;border:1px solid var(--border-subtle);margin-top:8px;overflow-x:auto;white-space:nowrap">
+        &lt;link rel="icon" href="data:image/svg+xml,&lt;svg ...&gt;&lt;text y='.9em' font-size='90'&gt;🍗&lt;/text&gt;&lt;/svg&gt;"&gt;
+    </div>
+</section>
+
+<!-- ────── Voice & Tone ────── -->
+<section id="voice">
+    <div class="section-label">Voice</div>
+    <h2>Voice & Tone</h2>
+    <p class="section-intro">
+        Professional-casual. Technically credible with personality. Lead with the concrete number, not the explanation. Helpful in errors, playful in marketing.
+    </p>
+
+    <div class="voice-grid">
+        <div class="voice-card voice-do">
+            <span class="badge">Do</span>
+            <p>"Like battery percentage, but for your gains."</p>
+        </div>
+        <div class="voice-card voice-dont">
+            <span class="badge">Don't</span>
+            <p>"A comprehensive portfolio analytics dashboard solution for active traders."</p>
+        </div>
+        <div class="voice-card voice-do">
+            <span class="badge">Do</span>
+            <p>"Your Schwab token has expired. Re-authenticate in Terminal:" + copyable command</p>
+        </div>
+        <div class="voice-card voice-dont">
+            <span class="badge">Don't</span>
+            <p>"We're sorry, an unexpected error occurred. Please contact support."</p>
+        </div>
+        <div class="voice-card voice-do">
+            <span class="badge">Do</span>
+            <p>"Forever (or until my AWS bill becomes sentient)"</p>
+        </div>
+        <div class="voice-card voice-dont">
+            <span class="badge">Don't</span>
+            <p>"Your data is stored securely according to industry best practices."</p>
+        </div>
+    </div>
+</section>
+
+<!-- ────── Colors ────── -->
+<section id="colors">
+    <div class="section-label">Foundations</div>
+    <h2>Colors</h2>
+    <p class="section-intro">
+        Green is the only brand color. Red and amber are purely semantic. The palette is neutral zinc + functional color. No decorative gradients, no secondary hue.
+    </p>
+
+    <h3>Brand & Semantic</h3>
+    <div class="swatch-grid">
+        <div class="swatch">
+            <div class="swatch-color" style="background:#22c55e"></div>
+            <div class="swatch-info"><div class="swatch-name">Green</div><div class="swatch-value">#22c55e</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#16a34a"></div>
+            <div class="swatch-info"><div class="swatch-name">Green Muted</div><div class="swatch-value">#16a34a</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:rgba(34,197,94,0.15)"></div>
+            <div class="swatch-info"><div class="swatch-name">Green Glow</div><div class="swatch-value">rgb(34 197 94 / 15%)</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#ef4444"></div>
+            <div class="swatch-info"><div class="swatch-name">Red</div><div class="swatch-value">#ef4444</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#f59e0b"></div>
+            <div class="swatch-info"><div class="swatch-name">Amber</div><div class="swatch-value">#f59e0b</div></div>
+        </div>
+    </div>
+
+    <h3>Neutral Scale (Landing Page)</h3>
+    <div class="swatch-grid">
+        <div class="swatch">
+            <div class="swatch-color" style="background:#09090b"></div>
+            <div class="swatch-info"><div class="swatch-name">Background</div><div class="swatch-value">#09090b</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#131316"></div>
+            <div class="swatch-info"><div class="swatch-name">Raised</div><div class="swatch-value">#131316</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#18181b"></div>
+            <div class="swatch-info"><div class="swatch-name">Card</div><div class="swatch-value">#18181b</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#1e1e21"></div>
+            <div class="swatch-info"><div class="swatch-name">Border Subtle</div><div class="swatch-value">#1e1e21</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#27272a"></div>
+            <div class="swatch-info"><div class="swatch-name">Border</div><div class="swatch-value">#27272a</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#71717a"></div>
+            <div class="swatch-info"><div class="swatch-name">Text Dim</div><div class="swatch-value">#71717a</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#a1a1aa"></div>
+            <div class="swatch-info"><div class="swatch-name">Text Muted</div><div class="swatch-value">#a1a1aa</div></div>
+        </div>
+        <div class="swatch">
+            <div class="swatch-color" style="background:#fafafa;border:1px solid #27272a"></div>
+            <div class="swatch-info"><div class="swatch-name">Text</div><div class="swatch-value">#fafafa</div></div>
+        </div>
+    </div>
+
+    <h3>macOS App — Semantic P&L</h3>
+    <p class="note" style="margin-top:0;margin-bottom:16px">The app uses SwiftUI semantic colors. These hex values are from the HTML mockup for reference.</p>
+    <div class="swatch-pair">
+        <div>
+            <div class="component-label">Dark Mode</div>
+            <div class="swatch-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:0">
+                <div class="swatch"><div class="swatch-color" style="background:#30D158;height:56px"></div><div class="swatch-info"><div class="swatch-name">Gain</div><div class="swatch-value">#30D158</div></div></div>
+                <div class="swatch"><div class="swatch-color" style="background:#FF453A;height:56px"></div><div class="swatch-info"><div class="swatch-name">Loss</div><div class="swatch-value">#FF453A</div></div></div>
+                <div class="swatch"><div class="swatch-color" style="background:#FFD60A;height:56px"></div><div class="swatch-info"><div class="swatch-name">Warning</div><div class="swatch-value">#FFD60A</div></div></div>
+            </div>
+        </div>
+        <div>
+            <div class="component-label">Light Mode</div>
+            <div class="swatch-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:0">
+                <div class="swatch"><div class="swatch-color" style="background:#248A3D;height:56px"></div><div class="swatch-info"><div class="swatch-name">Gain</div><div class="swatch-value">#248A3D</div></div></div>
+                <div class="swatch"><div class="swatch-color" style="background:#D70015;height:56px"></div><div class="swatch-info"><div class="swatch-name">Loss</div><div class="swatch-value">#D70015</div></div></div>
+                <div class="swatch"><div class="swatch-color" style="background:#B25000;height:56px"></div><div class="swatch-info"><div class="swatch-name">Warning</div><div class="swatch-value">#B25000</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Terminal Palette</h3>
+    <div class="swatch-grid" style="grid-template-columns: repeat(6, 1fr)">
+        <div class="swatch"><div class="swatch-color" style="background:#0d1117;height:48px"></div><div class="swatch-info"><div class="swatch-name">Body</div><div class="swatch-value">#0d1117</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#161b22;height:48px"></div><div class="swatch-info"><div class="swatch-name">Chrome</div><div class="swatch-value">#161b22</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#3fb950;height:48px"></div><div class="swatch-info"><div class="swatch-name">Gain</div><div class="swatch-value">#3fb950</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#f85149;height:48px"></div><div class="swatch-info"><div class="swatch-name">Loss</div><div class="swatch-value">#f85149</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#8b949e;height:48px"></div><div class="swatch-info"><div class="swatch-name">Label</div><div class="swatch-value">#8b949e</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#6e7681;height:48px"></div><div class="swatch-info"><div class="swatch-name">Dim</div><div class="swatch-value">#6e7681</div></div></div>
+    </div>
+</section>
+
+<!-- ────── Typography ────── -->
+<section id="typography">
+    <div class="section-label">Foundations</div>
+    <h2>Typography</h2>
+    <p class="section-intro">
+        Three font families on web. System fonts on native. P&L numbers are <em>always</em> monospaced with tabular numerals.
+    </p>
+
+    <div class="type-specimen">
+        <div class="sample" style="font-family:var(--font-display);font-weight:800;font-size:2.25rem;letter-spacing:-0.02em">Your P&L, always visible.</div>
+        <div class="meta">
+            <span>Bricolage Grotesque</span>
+            <span>800</span>
+            <span>Display / Headings</span>
+            <span>clamp(2rem, 4vw, 3rem)</span>
+        </div>
+    </div>
+
+    <div class="type-specimen">
+        <div class="sample" style="font-family:var(--font-body);font-weight:300;font-size:1.15rem;color:var(--text-muted);line-height:1.7">Track realized gains and losses from Schwab with FIFO lot matching. In your terminal or your menu bar.</div>
+        <div class="meta">
+            <span>Outfit</span>
+            <span>300</span>
+            <span>Body / Descriptions</span>
+            <span>0.85–1.15rem</span>
+        </div>
+    </div>
+
+    <div class="type-specimen">
+        <div class="sample" style="font-family:var(--font-mono);font-weight:600;font-size:3rem;color:var(--green);letter-spacing:-0.02em">▲ +$1,234</div>
+        <div class="meta">
+            <span>JetBrains Mono</span>
+            <span>600</span>
+            <span>Hero P&L</span>
+            <span>clamp(3.5rem, 8vw, 6rem)</span>
+        </div>
+    </div>
+
+    <div class="type-specimen">
+        <div class="sample" style="font-family:var(--font-mono);font-weight:500;font-size:0.9rem;color:var(--text-muted)"><span style="color:var(--green)">$</span> brew install batjaa/tap/tendies</div>
+        <div class="meta">
+            <span>JetBrains Mono</span>
+            <span>400–500</span>
+            <span>Code / Terminal</span>
+            <span>0.78–0.9rem</span>
+        </div>
+    </div>
+
+    <h3>macOS App Type Scale</h3>
+    <p class="note" style="margin-top:0;margin-bottom:16px">SF Pro for UI, SF Mono for financial data. All sizes in pt.</p>
+    <table class="scale-table">
+        <thead><tr><th>Element</th><th>Font</th><th>Weight</th><th>Size</th></tr></thead>
+        <tbody>
+            <tr><td>"Tendies" header</td><td>SF Pro</td><td class="mono">Semibold</td><td class="mono">13pt</td></tr>
+            <tr><td>Timeframe label</td><td>SF Pro</td><td class="mono">Medium</td><td class="mono">12.5pt</td></tr>
+            <tr><td>P&L value</td><td>SF Mono</td><td class="mono">Medium</td><td class="mono">12.5pt</td></tr>
+            <tr><td>Trade count</td><td>SF Pro</td><td class="mono">Regular</td><td class="mono">11pt</td></tr>
+            <tr><td>Ticker symbol</td><td>SF Mono</td><td class="mono">Semibold</td><td class="mono">11.5pt</td></tr>
+            <tr><td>Execution detail</td><td>SF Mono</td><td class="mono">Regular</td><td class="mono">10pt</td></tr>
+            <tr><td>Account chip</td><td>SF Mono</td><td class="mono">Medium</td><td class="mono">10.5pt</td></tr>
+            <tr><td>Footer / status</td><td>SF Pro</td><td class="mono">Regular</td><td class="mono">11pt</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Landing Page Type Scale</h3>
+    <table class="scale-table">
+        <thead><tr><th>Element</th><th>Family</th><th>Size</th><th>Weight</th></tr></thead>
+        <tbody>
+            <tr><td>Hero P&L</td><td class="mono">JetBrains Mono</td><td class="mono">clamp(3.5rem, 8vw, 6rem)</td><td class="mono">600</td></tr>
+            <tr><td>Hero heading</td><td class="mono">Bricolage Grotesque</td><td class="mono">clamp(2rem, 4vw, 3rem)</td><td class="mono">800</td></tr>
+            <tr><td>Section title</td><td class="mono">Bricolage Grotesque</td><td class="mono">clamp(1.75rem, 3vw, 2.25rem)</td><td class="mono">800</td></tr>
+            <tr><td>Section label</td><td class="mono">JetBrains Mono</td><td class="mono">0.8rem</td><td class="mono">400</td></tr>
+            <tr><td>Body copy</td><td class="mono">Outfit</td><td class="mono">1.05rem</td><td class="mono">300</td></tr>
+            <tr><td>Feature title</td><td class="mono">Bricolage Grotesque</td><td class="mono">1.1rem</td><td class="mono">700</td></tr>
+            <tr><td>Nav link</td><td class="mono">Outfit</td><td class="mono">0.9rem</td><td class="mono">400</td></tr>
+            <tr><td>Price amount</td><td class="mono">Bricolage Grotesque</td><td class="mono">2.5rem</td><td class="mono">800</td></tr>
+            <tr><td>Terminal code</td><td class="mono">JetBrains Mono</td><td class="mono">0.78rem</td><td class="mono">400</td></tr>
+            <tr><td>Footer</td><td class="mono">Outfit</td><td class="mono">0.82rem</td><td class="mono">400</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Spacing ────── -->
+<section id="spacing">
+    <div class="section-label">Foundations</div>
+    <h2>Spacing & Layout</h2>
+    <p class="section-intro">
+        The landing page uses a 1120px container with generous section padding. The macOS app is a fixed 300pt popover with compact native spacing.
+    </p>
+
+    <h3>Landing Page Spacing</h3>
+    <div style="margin-bottom:32px">
+        <div class="spacing-row"><div class="spacing-val">24px</div><div class="spacing-bar" style="width:24px"></div><div class="spacing-use">Container horizontal padding</div></div>
+        <div class="spacing-row"><div class="spacing-val">28px</div><div class="spacing-bar" style="width:28px"></div><div class="spacing-use">Card inner padding</div></div>
+        <div class="spacing-row"><div class="spacing-val">24px</div><div class="spacing-bar" style="width:24px"></div><div class="spacing-use">Grid gap</div></div>
+        <div class="spacing-row"><div class="spacing-val">60px</div><div class="spacing-bar" style="width:60px"></div><div class="spacing-use">Two-column grid gap</div></div>
+        <div class="spacing-row"><div class="spacing-val">80px</div><div class="spacing-bar" style="width:80px"></div><div class="spacing-use">Section vertical padding</div></div>
+        <div class="spacing-row"><div class="spacing-val">120px</div><div class="spacing-bar" style="width:120px"></div><div class="spacing-use">Hero top padding</div></div>
+    </div>
+
+    <h3>macOS App Spacing</h3>
+    <div style="margin-bottom:32px">
+        <div class="spacing-row"><div class="spacing-val">300pt</div><div class="spacing-bar" style="width:150px"></div><div class="spacing-use">Popover width (fixed)</div></div>
+        <div class="spacing-row"><div class="spacing-val">12px</div><div class="spacing-bar" style="width:12px"></div><div class="spacing-use">Header horizontal padding</div></div>
+        <div class="spacing-row"><div class="spacing-val">10px</div><div class="spacing-bar" style="width:10px"></div><div class="spacing-use">Row horizontal padding</div></div>
+        <div class="spacing-row"><div class="spacing-val">7px</div><div class="spacing-bar" style="width:7px"></div><div class="spacing-use">Row vertical padding</div></div>
+        <div class="spacing-row"><div class="spacing-val">8px</div><div class="spacing-bar" style="width:8px"></div><div class="spacing-use">Content area padding</div></div>
+        <div class="spacing-row"><div class="spacing-val">4px</div><div class="spacing-bar" style="width:4px"></div><div class="spacing-use">Chip gap / chip vertical padding (2px)</div></div>
+    </div>
+
+    <h3>Border Radius</h3>
+    <div class="radius-grid">
+        <div class="radius-item"><div class="radius-box" style="border-radius:16px"></div><div class="radius-val">16px</div><div class="spacing-use" style="font-size:0.68rem;color:var(--text-dim)">Pricing cards</div></div>
+        <div class="radius-item"><div class="radius-box" style="border-radius:14px"></div><div class="radius-val">14px</div><div class="spacing-use" style="font-size:0.68rem;color:var(--text-dim)">Feature cards, popover</div></div>
+        <div class="radius-item"><div class="radius-box" style="border-radius:12px"></div><div class="radius-val">12px</div><div class="spacing-use" style="font-size:0.68rem;color:var(--text-dim)">Terminal, install bar</div></div>
+        <div class="radius-item"><div class="radius-box" style="border-radius:10px"></div><div class="radius-val">10px</div><div class="spacing-use" style="font-size:0.68rem;color:var(--text-dim)">Buttons, status bar</div></div>
+        <div class="radius-item"><div class="radius-box" style="border-radius:8px"></div><div class="radius-val">8px</div><div class="spacing-use" style="font-size:0.68rem;color:var(--text-dim)">Timeframe rows, nav CTA</div></div>
+        <div class="radius-item"><div class="radius-box" style="border-radius:6px"></div><div class="radius-val">6px</div><div class="spacing-use" style="font-size:0.68rem;color:var(--text-dim)">Ticker rows, copy btn</div></div>
+        <div class="radius-item"><div class="radius-box" style="border-radius:4px"></div><div class="radius-val">4px</div><div class="spacing-use" style="font-size:0.68rem;color:var(--text-dim)">Account chips, code</div></div>
+    </div>
+</section>
+
+<!-- ────── Motion ────── -->
+<section id="motion">
+    <div class="section-label">Foundations</div>
+    <h2>Motion</h2>
+    <p class="section-intro">
+        Purposeful, restrained animation. One orchestrated entrance per page, functional transitions for state changes. No bounce, no elastic.
+    </p>
+
+    <div class="anim-grid">
+        <div class="anim-item">
+            <div class="visual"><span class="spin-demo">↻</span></div>
+            <div class="anim-label">Refresh Spin</div>
+            <div class="anim-spec">0.8s linear infinite</div>
+        </div>
+        <div class="anim-item">
+            <div class="visual"><span class="chevron-demo" title="Hover me">▸</span></div>
+            <div class="anim-label">Chevron Expand</div>
+            <div class="anim-spec">0.15s ease-in-out</div>
+        </div>
+        <div class="anim-item" id="reveal-trigger" style="cursor:pointer" onclick="this.querySelector('.reveal-demo').classList.toggle('play')">
+            <div class="visual"><span class="reveal-demo" style="display:inline-block">↑</span></div>
+            <div class="anim-label">Scroll Reveal</div>
+            <div class="anim-spec">0.7s ease (click to replay)</div>
+        </div>
+    </div>
+
+    <table class="scale-table">
+        <thead><tr><th>Animation</th><th>Duration</th><th>Easing</th><th>Context</th></tr></thead>
+        <tbody>
+            <tr><td>Hero entrance</td><td class="mono">0.8s</td><td class="mono">ease</td><td>5-step stagger, 0.12s delay</td></tr>
+            <tr><td>Scroll reveal</td><td class="mono">0.7s</td><td class="mono">ease</td><td>opacity + translateY(24px)</td></tr>
+            <tr><td>Drill-down expand</td><td class="mono">0.15s</td><td class="mono">easeInOut</td><td>Opacity transition</td></tr>
+            <tr><td>Chevron rotation</td><td class="mono">0.15s</td><td class="mono">easeInOut</td><td>0° → 90°</td></tr>
+            <tr><td>Refresh icon</td><td class="mono">0.8s</td><td class="mono">linear</td><td>360° repeat while loading</td></tr>
+            <tr><td>Popover appear</td><td class="mono">0.2s</td><td class="mono">cubic-bezier(0.16, 1, 0.3, 1)</td><td>Scale + translateY</td></tr>
+            <tr><td>Card/link hover</td><td class="mono">0.2–0.3s</td><td class="mono">default</td><td>Border-color, opacity</td></tr>
+            <tr><td>Data refresh</td><td class="mono">—</td><td class="mono">—</td><td>Instant swap, no animation</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Icons ────── -->
+<section id="icons">
+    <div class="section-label">Foundations</div>
+    <h2>Iconography</h2>
+    <p class="section-intro">
+        Emoji for the landing page. SF Symbols for the native app. No custom icon assets in either context.
+    </p>
+
+    <h3>Landing Page — Emoji</h3>
+    <div class="icon-grid">
+        <div class="icon-item"><div class="emoji">🍗</div><div class="label">Brand</div></div>
+        <div class="icon-item"><div class="emoji">📊</div><div class="label">FIFO</div></div>
+        <div class="icon-item"><div class="emoji">📅</div><div class="label">Timeframes</div></div>
+        <div class="icon-item"><div class="emoji">🔍</div><div class="label">Filter</div></div>
+        <div class="icon-item"><div class="emoji">🔐</div><div class="label">Security</div></div>
+        <div class="icon-item"><div class="emoji">🗑</div><div class="label">Ephemeral</div></div>
+        <div class="icon-item"><div class="emoji">🚫</div><div class="label">Privacy</div></div>
+        <div class="icon-item"><div class="emoji">👤</div><div class="label">Anonymous</div></div>
+    </div>
+
+    <h3>macOS App — SF Symbols</h3>
+    <table class="scale-table">
+        <thead><tr><th>Symbol Name</th><th>Usage</th><th>Size</th></tr></thead>
+        <tbody>
+            <tr><td class="mono-sm">arrow.clockwise</td><td>Refresh button</td><td class="mono">12pt medium</td></tr>
+            <tr><td class="mono-sm">gearshape</td><td>Settings button</td><td class="mono">12pt medium</td></tr>
+            <tr><td class="mono-sm">chevron.right</td><td>Expandable rows</td><td class="mono">7–8pt semibold</td></tr>
+            <tr><td class="mono-sm">person.crop.circle.badge.questionmark</td><td>Login screen</td><td class="mono">28pt</td></tr>
+            <tr><td class="mono-sm">clock.badge.exclamationmark</td><td>Trial expired</td><td class="mono">28pt</td></tr>
+            <tr><td class="mono-sm">doc.on.doc</td><td>Copy command</td><td class="mono">10pt</td></tr>
+            <tr><td class="mono-sm">clock</td><td>Trial countdown</td><td class="mono">9pt</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Buttons ────── -->
+<section id="buttons">
+    <div class="section-label">Components</div>
+    <h2>Buttons</h2>
+    <p class="section-intro">
+        Green for primary CTAs. Ghost/outlined for secondary actions. All transitions 0.2s. Hover = opacity 0.85 on filled, border lighten on outlined.
+    </p>
+
+    <h3>Landing Page</h3>
+    <div class="component-row">
+        <button class="btn-demo-primary">Get Started</button>
+        <button class="btn-demo-secondary">View on GitHub</button>
+        <button class="btn-demo-nav">Get Started</button>
+        <button class="btn-demo-copy">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+        </button>
+        <button class="btn-demo-outline">Install CLI</button>
+    </div>
+
+    <table class="scale-table">
+        <thead><tr><th>Variant</th><th>Background</th><th>Text</th><th>Border</th><th>Radius</th><th>Padding</th></tr></thead>
+        <tbody>
+            <tr><td>Primary</td><td class="mono">#22c55e</td><td class="mono">#000</td><td class="mono">none</td><td class="mono">10px</td><td class="mono">12px 28px</td></tr>
+            <tr><td>Secondary</td><td class="mono">transparent</td><td class="mono">#a1a1aa</td><td class="mono">1px #27272a</td><td class="mono">10px</td><td class="mono">12px 28px</td></tr>
+            <tr><td>Nav CTA</td><td class="mono">#22c55e</td><td class="mono">#000</td><td class="mono">none</td><td class="mono">8px</td><td class="mono">8px 18px</td></tr>
+            <tr><td>Copy</td><td class="mono">#18181b</td><td class="mono">#a1a1aa</td><td class="mono">1px #27272a</td><td class="mono">6px</td><td class="mono">6px 10px</td></tr>
+            <tr><td>Plan Outline</td><td class="mono">transparent</td><td class="mono">#fafafa</td><td class="mono">1px #27272a</td><td class="mono">10px</td><td class="mono">12px full</td></tr>
+        </tbody>
+    </table>
+
+    <h3>macOS App</h3>
+    <p class="note" style="margin-top:0;margin-bottom:12px">Uses SwiftUI button styles — no custom colors needed.</p>
+    <table class="scale-table">
+        <thead><tr><th>Style</th><th>Usage</th><th>Appearance</th></tr></thead>
+        <tbody>
+            <tr><td class="mono-sm">.borderedProminent</td><td>Primary actions (Login, Subscribe)</td><td>System accent fill</td></tr>
+            <tr><td class="mono-sm">.bordered</td><td>Secondary options (Yearly plan)</td><td>System bordered</td></tr>
+            <tr><td class="mono-sm">.plain</td><td>Tertiary (Quit, Log out, Copy, Refresh status)</td><td>Text only, secondary color</td></tr>
+            <tr><td class="mono-sm">.plain + SF Symbol</td><td>Header icons (↻ ⚙)</td><td>12pt icon, secondary</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Cards ────── -->
+<section id="cards">
+    <div class="section-label">Components</div>
+    <h2>Cards</h2>
+    <p class="section-intro">
+        All cards share the same base: raised background, subtle border, hover border lighten. Pro pricing card gets a green border accent.
+    </p>
+
+    <div class="card-demo-grid">
+        <div class="card-demo">
+            <span style="font-size:1.5rem;display:block;margin-bottom:14px">📊</span>
+            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:8px">FIFO Lot Matching</div>
+            <div style="color:var(--text-muted);font-size:0.9rem;font-weight:300;line-height:1.6">Computes realized P&L from Schwab transactions using first-in-first-out matching.</div>
+        </div>
+        <div class="card-demo" style="border-color:var(--green-muted);position:relative">
+            <div style="position:absolute;top:-10px;right:20px;background:var(--green);color:#000;font-family:var(--font-mono);font-size:0.7rem;font-weight:600;padding:3px 10px;border-radius:6px">7-day trial</div>
+            <div style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:4px">Tendies Pro</div>
+            <div style="color:var(--text-muted);font-size:0.85rem;font-weight:300;margin-bottom:16px">Menu bar app + broker</div>
+            <div style="font-family:var(--font-display);font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px">$5</div>
+            <div style="color:var(--text-dim);font-size:0.82rem">per month &nbsp;·&nbsp; or $40/yr</div>
+        </div>
+    </div>
+
+    <table class="scale-table">
+        <thead><tr><th>Property</th><th>Value</th></tr></thead>
+        <tbody>
+            <tr><td>Background</td><td class="mono">#131316 (--bg-raised)</td></tr>
+            <tr><td>Border default</td><td class="mono">1px solid #1e1e21</td></tr>
+            <tr><td>Border hover</td><td class="mono">1px solid #27272a</td></tr>
+            <tr><td>Border pro</td><td class="mono">1px solid #16a34a → #22c55e on hover</td></tr>
+            <tr><td>Pro badge</td><td class="mono">bg #22c55e, text #000, JetBrains Mono 0.7rem 600</td></tr>
+            <tr><td>Radius</td><td class="mono">14px (features) / 16px (pricing)</td></tr>
+            <tr><td>Transition</td><td class="mono">border-color 0.3s</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Terminal ────── -->
+<section id="terminal">
+    <div class="section-label">Components</div>
+    <h2>Terminal Block</h2>
+    <p class="section-intro">
+        GitHub-style terminal window with traffic light dots. Used on the landing page to show CLI output.
+    </p>
+
+    <div class="terminal-demo">
+        <div class="chrome">
+            <div class="dot dot-r"></div>
+            <div class="dot dot-y"></div>
+            <div class="dot dot-g"></div>
+            <div class="title">tendies --day</div>
+        </div>
+        <div class="body"><span class="t-prompt">$</span> <span class="t-cmd">tendies --day</span>
+
+<span class="t-dim">Tendies Realized P&L (2026-03-04 15:30:00 EST)</span>
+<span class="t-dim">Account: ...789</span>
+
+<span class="t-label">Period        Gains        Losses           Net   Trades</span>
+<span class="t-dim">──────────────────────────────────────────────────────────</span>
+Day       <span class="t-gain">$1,500.00</span>      <span class="t-loss">-$265.44</span>    <span class="t-gain">+$1,234.56</span>       12
+
+<span class="t-label">Trades:</span>
+  <span class="t-label">Time              Symbol          Qty          P&L     Hold</span>
+  <span class="t-dim">─────────────────────────────────────────────────────────</span>
+  Mar 04 09:31      NVDA            100     <span class="t-gain">+$456.78</span>      23m
+  Mar 04 09:45      TSLA             50     <span class="t-gain">+$234.12</span>      15m
+  Mar 04 10:12      AMD             200      <span class="t-loss">-$89.45</span>       8m
+  Mar 04 11:02      META            150     <span class="t-gain">+$633.11</span>      45m</div>
+    </div>
+
+    <table class="scale-table">
+        <thead><tr><th>Property</th><th>Value</th></tr></thead>
+        <tbody>
+            <tr><td>Body background</td><td class="mono">#0d1117</td></tr>
+            <tr><td>Chrome background</td><td class="mono">#161b22</td></tr>
+            <tr><td>Border</td><td class="mono">1px solid #21262d</td></tr>
+            <tr><td>Radius</td><td class="mono">12px</td></tr>
+            <tr><td>Shadow</td><td class="mono">0 24px 80px rgba(0,0,0,0.5)</td></tr>
+            <tr><td>Font</td><td class="mono">JetBrains Mono 0.78rem, line-height 1.65</td></tr>
+            <tr><td>Dots</td><td class="mono">#ff5f57 / #febc2e / #28c840, 12px circles</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Popover ────── -->
+<section id="popover">
+    <div class="section-label">Components</div>
+    <h2>Menu Bar Popover</h2>
+    <p class="section-intro">
+        The macOS popover in dark and light appearances. 300pt fixed width, frosted glass material, system fonts.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:32px">
+        <div>
+            <div class="component-label">Dark Mode</div>
+            <div class="popover-demo-wrap">
+                <div class="mac-bar"><span class="pnl-label" style="color:#30D158">▲ +$1,234</span><span class="sys">Wi-Fi&ensp;100%&ensp;3:30</span></div>
+                <div class="popover-demo popover-dark">
+                    <div class="pop-header"><span class="name" style="color:#e5e5e7">Tendies</span><span class="acts">↻ &ensp;⚙</span></div>
+                    <div class="pop-div"></div>
+                    <div class="pop-rows">
+                        <div class="pop-row active-dark"><span class="lbl" style="color:#e5e5e7">Day</span><span class="pnl" style="color:#30D158">+$1,234.56</span><span class="trades">12 trades</span></div>
+                        <div class="pop-row"><span class="lbl" style="color:#e5e5e7">Week</span><span class="pnl" style="color:#30D158">+$3,456.78</span><span class="trades">45 trades</span></div>
+                        <div class="pop-row"><span class="lbl" style="color:#e5e5e7">Month</span><span class="pnl" style="color:#FF453A">-$2,100.00</span><span class="trades">98 trades</span></div>
+                    </div>
+                    <div class="pop-div"></div>
+                    <div class="pop-footer"><span>Updated 2m ago</span><span style="color:#e5e5e7">Quit</span></div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="component-label">Light Mode</div>
+            <div class="popover-demo-wrap">
+                <div class="mac-bar" style="background:#eaeaec;color:rgba(0,0,0,0.88)"><span class="pnl-label">▲ +$1,234</span><span class="sys" style="color:rgba(0,0,0,0.35)">Wi-Fi&ensp;100%&ensp;3:30</span></div>
+                <div class="popover-demo popover-light">
+                    <div class="pop-header"><span class="name">Tendies</span><span class="acts">↻ &ensp;⚙</span></div>
+                    <div class="pop-div"></div>
+                    <div class="pop-rows">
+                        <div class="pop-row active-light"><span class="lbl">Day</span><span class="pnl" style="color:#248A3D">+$1,234.56</span><span class="trades">12 trades</span></div>
+                        <div class="pop-row"><span class="lbl">Week</span><span class="pnl" style="color:#248A3D">+$3,456.78</span><span class="trades">45 trades</span></div>
+                        <div class="pop-row"><span class="lbl">Month</span><span class="pnl" style="color:#D70015">-$2,100.00</span><span class="trades">98 trades</span></div>
+                    </div>
+                    <div class="pop-div"></div>
+                    <div class="pop-footer"><span>Updated 2m ago</span><span style="color:rgba(0,0,0,0.88)">Quit</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ────── Dot Grid ────── -->
+<section id="dot-grid">
+    <div class="section-label">Components</div>
+    <h2>Dot Grid Background</h2>
+    <p class="section-intro">
+        Subtle textural element on the landing page. Fixed position, masked to a radial vignette so it fades at edges. The green glow radiates from center-top.
+    </p>
+    <div class="dot-grid-demo"></div>
+    <table class="scale-table">
+        <thead><tr><th>Property</th><th>Value</th></tr></thead>
+        <tbody>
+            <tr><td>Dot color</td><td class="mono">#27272a</td></tr>
+            <tr><td>Dot size</td><td class="mono">0.8px radius</td></tr>
+            <tr><td>Grid spacing</td><td class="mono">32px x 32px</td></tr>
+            <tr><td>Opacity</td><td class="mono">0.3</td></tr>
+            <tr><td>Mask</td><td class="mono">radial-gradient(ellipse at 50% 30%, black 20%, transparent 70%)</td></tr>
+            <tr><td>Position</td><td class="mono">fixed, inset 0, z-index 0</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Data Formatting ────── -->
+<section id="data-format">
+    <div class="section-label">Patterns</div>
+    <h2>Data Formatting</h2>
+    <p class="section-intro">
+        Consistent rules for how financial data appears across every surface. P&L is always monospaced, always colored, always prefixed.
+    </p>
+
+    <h3>P&L Display</h3>
+    <div style="margin-bottom:32px">
+        <div class="format-row"><span class="format-context">Menu bar</span><span class="format-value" style="color:var(--green);font-family:var(--font-mono)">▲ +$1,234</span></div>
+        <div class="format-row"><span class="format-context">Abbreviated</span><span class="format-value" style="color:var(--green);font-family:var(--font-mono)">▲ +$12.3K</span></div>
+        <div class="format-row"><span class="format-context">Popover row</span><span class="format-value" style="color:var(--green);font-family:var(--font-mono)">+$1,234.56</span></div>
+        <div class="format-row"><span class="format-context">Negative</span><span class="format-value" style="color:var(--red);font-family:var(--font-mono)">▼ -$567</span></div>
+        <div class="format-row"><span class="format-context">Zero</span><span class="format-value" style="font-family:var(--font-mono)">● $0</span></div>
+        <div class="format-row"><span class="format-context">Loading</span><span class="format-value" style="color:var(--text-dim);font-family:var(--font-mono)">◌ $---</span></div>
+        <div class="format-row"><span class="format-context">Error</span><span class="format-value" style="color:var(--amber);font-family:var(--font-mono)">⚠ $---</span></div>
+    </div>
+
+    <h3>Abbreviation Thresholds</h3>
+    <table class="scale-table">
+        <thead><tr><th>Range</th><th>Format</th><th>Example</th></tr></thead>
+        <tbody>
+            <tr><td>&lt; $10,000</td><td>Whole dollars, comma-grouped</td><td class="mono">$1,234</td></tr>
+            <tr><td>$10K – $999K</td><td>One decimal + K</td><td class="mono">$12.3K</td></tr>
+            <tr><td>$1M+</td><td>One decimal + M</td><td class="mono">$1.2M</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Trade Side Labels</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+        <span style="font-family:var(--font-mono);font-size:0.82rem;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:#3fb950;border:1px solid rgba(34,197,94,0.15)">BUY</span>
+        <span style="font-family:var(--font-mono);font-size:0.82rem;padding:4px 10px;border-radius:4px;background:rgba(239,68,68,0.08);color:#f85149;border:1px solid rgba(239,68,68,0.15)">SELL</span>
+        <span style="font-family:var(--font-mono);font-size:0.82rem;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:#3fb950;border:1px solid rgba(34,197,94,0.15)">BTO</span>
+        <span style="font-family:var(--font-mono);font-size:0.82rem;padding:4px 10px;border-radius:4px;background:rgba(239,68,68,0.08);color:#f85149;border:1px solid rgba(239,68,68,0.15)">STC</span>
+        <span style="font-family:var(--font-mono);font-size:0.82rem;padding:4px 10px;border-radius:4px;background:rgba(34,197,94,0.08);color:#3fb950;border:1px solid rgba(34,197,94,0.15)">BTC</span>
+        <span style="font-family:var(--font-mono);font-size:0.82rem;padding:4px 10px;border-radius:4px;background:rgba(239,68,68,0.08);color:#f85149;border:1px solid rgba(239,68,68,0.15)">STO</span>
+    </div>
+
+    <h3>Counts</h3>
+    <table class="scale-table">
+        <thead><tr><th>Context</th><th>Format</th><th>Example</th></tr></thead>
+        <tbody>
+            <tr><td>Timeframe row</td><td>N trades</td><td class="mono">12 trades</td></tr>
+            <tr><td>Ticker row</td><td>N exe</td><td class="mono">4 exe</td></tr>
+            <tr><td>Execution qty (equity)</td><td>Nsh @ $price</td><td class="mono">50sh @ $385.10</td></tr>
+            <tr><td>Execution qty (option)</td><td>N @ $price</td><td class="mono">5 @ $4.20</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Platform Matrix ────── -->
+<section id="platforms">
+    <div class="section-label">Patterns</div>
+    <h2>Platform Matrix</h2>
+    <p class="section-intro">
+        Each surface uses platform-appropriate tooling while maintaining the same brand language.
+    </p>
+
+    <table class="platform-table">
+        <thead><tr><th>Surface</th><th>Theme</th><th>Display Font</th><th>Body Font</th><th>Mono Font</th><th>Color Source</th></tr></thead>
+        <tbody>
+            <tr><td>Landing page</td><td>Dark only</td><td class="mono-sm">Bricolage Grotesque</td><td class="mono-sm">Outfit</td><td class="mono-sm">JetBrains Mono</td><td class="mono-sm">CSS vars</td></tr>
+            <tr><td>HTML mockup</td><td>Dark + Light</td><td class="mono-sm">—</td><td class="mono-sm">DM Sans</td><td class="mono-sm">JetBrains Mono</td><td class="mono-sm">CSS vars</td></tr>
+            <tr><td>macOS app</td><td>System auto</td><td class="mono-sm">—</td><td class="mono-sm">SF Pro</td><td class="mono-sm">SF Mono</td><td class="mono-sm">SwiftUI semantic</td></tr>
+            <tr><td>CLI output</td><td>Inherited</td><td class="mono-sm">—</td><td class="mono-sm">—</td><td class="mono-sm">User terminal</td><td class="mono-sm">ANSI codes</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ────── Principles ────── -->
+<section id="principles">
+    <div class="section-label">Patterns</div>
+    <h2>Design Principles</h2>
+    <p class="section-intro">
+        Eight rules that guide every design decision across the product.
+    </p>
+
+    <div class="principles-grid">
+        <div class="principle">
+            <div class="principle-num">01</div>
+            <h4>Numbers first</h4>
+            <p>The P&L value is always the most prominent element — large, monospaced, colored.</p>
+        </div>
+        <div class="principle">
+            <div class="principle-num">02</div>
+            <h4>Green means up</h4>
+            <p>Green is the only brand color. It signals gains, primary CTAs, and the $ prompt.</p>
+        </div>
+        <div class="principle">
+            <div class="principle-num">03</div>
+            <h4>Native on native</h4>
+            <p>The macOS app uses SF fonts, system colors, and standard materials. No custom chrome.</p>
+        </div>
+        <div class="principle">
+            <div class="principle-num">04</div>
+            <h4>Progressive disclosure</h4>
+            <p>Timeframes → tickers → executions → matched opens. Each click reveals one more layer.</p>
+        </div>
+        <div class="principle">
+            <div class="principle-num">05</div>
+            <h4>Stale beats empty</h4>
+            <p>During refresh, show the previous value. Never flash to a loading state after first load.</p>
+        </div>
+        <div class="principle">
+            <div class="principle-num">06</div>
+            <h4>Monospace for money</h4>
+            <p>All financial numbers use monospaced fonts with tabular numerals for column alignment.</p>
+        </div>
+        <div class="principle">
+            <div class="principle-num">07</div>
+            <h4>Dark by default</h4>
+            <p>The landing page commits to dark. The native app defers to macOS appearance.</p>
+        </div>
+        <div class="principle">
+            <div class="principle-num">08</div>
+            <h4>Functional color only</h4>
+            <p>Green = gain. Red = loss. Amber = warning. No decorative color use anywhere.</p>
+        </div>
+    </div>
+</section>
+
+</main>
+</div>
+
+<script>
+// Active nav link tracking
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.sidebar nav a[href^="#"]');
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            navLinks.forEach(l => l.classList.remove('active'));
+            const link = document.querySelector(`.sidebar nav a[href="#${entry.target.id}"]`);
+            if (link) link.classList.add('active');
+        }
+    });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
