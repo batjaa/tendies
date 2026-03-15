@@ -43,6 +43,7 @@ See `.env.example` for all required variables. Key ones:
 
 - `SCHWAB_CLIENT_ID` / `SCHWAB_CLIENT_SECRET` — Schwab API credentials
 - `SCHWAB_REDIRECT_URL` — OAuth callback URL
+- `POSTMARK_API_KEY` — Postmark transactional email API key
 
 ## Testing
 
