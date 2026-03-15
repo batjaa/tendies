@@ -2,9 +2,11 @@
 
 namespace Tests\Unit;
 
+use App\Mail\WaitlistInviteMail;
 use App\Models\WaitlistEntry;
 use App\Services\WaitlistService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class WaitlistServiceTest extends TestCase
@@ -16,6 +18,7 @@ class WaitlistServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Mail::fake();
         $this->service = new WaitlistService;
     }
 
@@ -35,6 +38,8 @@ class WaitlistServiceTest extends TestCase
             $this->assertNotNull($entry->invited_at);
             $this->assertNotNull($entry->invite_expires_at);
         }
+
+        Mail::assertQueued(WaitlistInviteMail::class, 3);
     }
 
     public function test_skips_already_invited_entries(): void
@@ -46,6 +51,8 @@ class WaitlistServiceTest extends TestCase
 
         $this->assertEquals(1, $result['sent']);
         $this->assertEquals(1, $result['skipped']);
+
+        Mail::assertQueued(WaitlistInviteMail::class, 1);
     }
 
     public function test_skips_accepted_entries(): void
@@ -56,5 +63,25 @@ class WaitlistServiceTest extends TestCase
 
         $this->assertEquals(0, $result['sent']);
         $this->assertEquals(1, $result['skipped']);
+
+        Mail::assertNotQueued(WaitlistInviteMail::class);
+    }
+
+    public function test_reverts_to_pending_on_mail_failure(): void
+    {
+        Mail::shouldReceive('to->send')->andThrow(new \RuntimeException('Postmark down'));
+
+        $entry = WaitlistEntry::factory()->create();
+
+        $result = $this->service->sendInvites(collect([$entry]));
+
+        $this->assertEquals(0, $result['sent']);
+        $this->assertEquals(1, $result['skipped']);
+
+        $entry->refresh();
+        $this->assertEquals('pending', $entry->status);
+        $this->assertNull($entry->invite_token);
+        $this->assertNull($entry->invited_at);
+        $this->assertNull($entry->invite_expires_at);
     }
 }

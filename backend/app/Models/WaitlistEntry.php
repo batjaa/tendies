@@ -5,6 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/*
+ * State machine:
+ *
+ * pending ──[Nova: Send Invite]──▶ invited ──[/auth/waitlist/verify]──▶ accepted
+ *   ▲ confirmation email              │ invite email sent                  │
+ *   │ queued on signup                │                                    │
+ *                                     ▼
+ *                                (expired if
+ *                                 invite_expires_at
+ *                                 is past)
+ */
 class WaitlistEntry extends Model
 {
     use HasFactory;

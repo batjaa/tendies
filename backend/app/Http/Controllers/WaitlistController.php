@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WaitlistConfirmationMail;
 use App\Models\WaitlistEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class WaitlistController extends Controller
 {
@@ -19,6 +21,8 @@ class WaitlistController extends Controller
         $position = WaitlistEntry::where('status', 'pending')
             ->where('id', '<=', $entry->id)
             ->count();
+
+        Mail::to($entry->email)->send(new WaitlistConfirmationMail($entry, $position));
 
         return response()->json([
             'message' => "You're on the list!",

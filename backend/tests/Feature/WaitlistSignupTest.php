@@ -2,13 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Mail\WaitlistConfirmationMail;
 use App\Models\WaitlistEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class WaitlistSignupTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Mail::fake();
+    }
 
     public function test_signup_creates_pending_entry(): void
     {
@@ -23,6 +31,10 @@ class WaitlistSignupTest extends TestCase
             'email' => 'jane@example.com',
             'status' => 'pending',
         ]);
+
+        Mail::assertQueued(WaitlistConfirmationMail::class, function ($mail) {
+            return $mail->hasTo('jane@example.com') && $mail->position === 1;
+        });
     }
 
     public function test_rejects_duplicate_email(): void

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Mail\WaitlistInviteMail;
 use App\Models\WaitlistEntry;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class WaitlistService
@@ -33,8 +35,19 @@ class WaitlistService
                 'invite_expires_at' => now()->addDays(7),
             ]);
 
-            // TODO: Send invite email via Postmark.
-            // Mail::to($entry->email)->send(new WaitlistInviteMail($entry));
+            try {
+                Mail::to($entry->email)->send(new WaitlistInviteMail($entry));
+            } catch (\Throwable $e) {
+                $entry->update([
+                    'status' => 'pending',
+                    'invite_token' => null,
+                    'invited_at' => null,
+                    'invite_expires_at' => null,
+                ]);
+                $skipped++;
+
+                continue;
+            }
 
             $sent++;
         }
