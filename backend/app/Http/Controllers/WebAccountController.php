@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TradingAccount;
 use App\Services\SchwabService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -37,6 +38,19 @@ class WebAccountController extends Controller
         ]);
 
         return back()->with('success', 'Password updated successfully.');
+    }
+
+    public function disconnectBrokerage(TradingAccount $tradingAccount)
+    {
+        if ($tradingAccount->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $tradingAccount->schwabToken()->delete();
+        $tradingAccount->hashes()->delete();
+        $tradingAccount->delete();
+
+        return back()->with('success', 'Brokerage disconnected.');
     }
 
     public function connectSchwab(SchwabService $schwab)

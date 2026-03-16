@@ -72,6 +72,37 @@ class WebAccountTest extends TestCase
         $this->assertTrue(\Illuminate\Support\Facades\Hash::check('new-password', $user->fresh()->password));
     }
 
+    public function test_disconnect_brokerage(): void
+    {
+        $user = User::factory()->onTrial()->create();
+        $account = TradingAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'schwab',
+            'is_primary' => true,
+        ]);
+
+        $response = $this->actingAs($user)->delete("/account/brokerage/{$account->id}");
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('trading_accounts', ['id' => $account->id]);
+    }
+
+    public function test_disconnect_brokerage_forbidden_for_other_user(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $account = TradingAccount::factory()->create([
+            'user_id' => $owner->id,
+            'provider' => 'schwab',
+        ]);
+
+        $response = $this->actingAs($other)->delete("/account/brokerage/{$account->id}");
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('trading_accounts', ['id' => $account->id]);
+    }
+
     public function test_logout_clears_session(): void
     {
         $user = User::factory()->create();

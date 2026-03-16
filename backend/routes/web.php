@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/account/password', [WebAccountController::class, 'showPasswordForm'])->name('account.password');
     Route::post('/account/password', [WebAccountController::class, 'updatePassword']);
     Route::get('/account/connect/schwab', [WebAccountController::class, 'connectSchwab'])->name('account.connect.schwab');
+    Route::delete('/account/brokerage/{tradingAccount}', [WebAccountController::class, 'disconnectBrokerage'])->name('account.disconnect');
     Route::post('/account/billing', [WebAccountController::class, 'billing'])->name('account.billing');
     Route::post('/account/checkout', [WebAccountController::class, 'checkout'])->name('account.checkout');
 

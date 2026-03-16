@@ -53,10 +53,15 @@
                 @if($account->hashes->isNotEmpty())
                     <span class="text-[0.78rem] text-content-dim font-mono">···{{ substr($account->hashes->first()->hash_value, -3) }}</span>
                 @endif
+                @if($account->is_primary)
+                    <span class="text-[0.68rem] font-semibold uppercase tracking-wider text-gain">Primary</span>
+                @endif
             </div>
-            @if($account->is_primary)
-                <span class="text-[0.68rem] font-semibold uppercase tracking-wider text-gain">Primary</span>
-            @endif
+            <form method="POST" action="{{ route('account.disconnect', $account) }}" onsubmit="return confirm('Disconnect this brokerage? You can reconnect it later.')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="text-[0.75rem] text-content-dim hover:text-red-400 transition-colors cursor-pointer bg-transparent border-0">Disconnect</button>
+            </form>
         </div>
         @endforeach
     </div>
