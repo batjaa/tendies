@@ -34,11 +34,13 @@ class WaitlistEntry extends Resource
                 ->sortable()
                 ->rules('required', 'email', 'max:255'),
 
-            Badge::make('Status')
-                ->map([
+            Badge::make('Status', function () {
+                return $this->resource->effectiveStatus();
+            })->map([
                     'pending' => 'info',
                     'invited' => 'warning',
                     'accepted' => 'success',
+                    'expired' => 'danger',
                 ]),
 
             DateTime::make('Invited At')

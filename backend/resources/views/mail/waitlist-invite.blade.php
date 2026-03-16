@@ -1,7 +1,7 @@
 <x-mail::message>
 # You're invited to Tendies!
 
-Great news — your spot is ready. Click the button below to connect your Schwab account and start tracking your P&L.
+Great news — your spot is ready. Click the button below to create your account, connect your brokerage, and start tracking your P&L.
 
 <x-mail::button :url="url('/auth/waitlist/verify?token=' . $entry->invite_token)">
 Accept Your Invite

@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\SchwabCallbackController;
+use App\Http\Controllers\WaitlistRegistrationController;
 use App\Services\SchwabService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -43,34 +45,35 @@ Route::get('/auth/link/complete', function () {
     return response()->json(['status' => 'linked', 'message' => 'Account linked successfully.']);
 })->name('auth.link.complete');
 
-Route::get('/auth/waitlist/verify', function (\Illuminate\Http\Request $request, \App\Services\SchwabService $schwab) {
+Route::get('/auth/waitlist/verify', function (\Illuminate\Http\Request $request) {
     $token = $request->query('token');
     if (! $token) {
         abort(400, 'Missing invite token');
     }
 
-    $entry = \App\Models\WaitlistEntry::where('invite_token', $token)
-        ->where('status', 'invited')
-        ->first();
+    $entry = \App\Models\WaitlistEntry::findValidByToken($token);
 
     if (! $entry) {
-        abort(403, 'Invalid or already used invite');
+        abort(403, 'Invalid or expired invite');
     }
 
-    if ($entry->isExpired()) {
-        abort(403, 'Invite has expired');
-    }
-
-    // Store token in session for the Schwab callback to consume.
     session(['waitlist_invite_token' => $token]);
 
-    $state = bin2hex(random_bytes(16));
-
-    $passportAuthorizeUrl = config('app.url') . '/auth/waitlist/welcome';
-    Cache::put("schwab_state:{$state}", $passportAuthorizeUrl, now()->addMinutes(10));
-
-    return redirect($schwab->getAuthorizeUrl($state));
+    return redirect('/auth/waitlist/register');
 })->name('auth.waitlist.verify');
+
+Route::get('/auth/waitlist/register', [WaitlistRegistrationController::class, 'showForm'])
+    ->name('auth.waitlist.register');
+Route::post('/auth/waitlist/register', [WaitlistRegistrationController::class, 'register']);
+
+Route::middleware('auth')->group(function () {
+    Route::get('/onboarding/connect', [OnboardingController::class, 'showConnect'])
+        ->name('onboarding.connect');
+    Route::get('/onboarding/connect/schwab', [OnboardingController::class, 'connectSchwab'])
+        ->name('onboarding.connect.schwab');
+    Route::get('/onboarding/complete', [OnboardingController::class, 'complete'])
+        ->name('onboarding.complete');
+});
 
 Route::get('/subscription/success', function () {
     return view('subscription.success');

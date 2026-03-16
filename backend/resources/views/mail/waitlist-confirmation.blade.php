@@ -7,7 +7,7 @@ We're letting people in gradually as we scale up. When it's your turn, you'll re
 
 **What is Tendies?**
 
-Tendies tracks your realized P&L from Schwab/thinkorswim day trading — automatically. Connect your brokerage account and see your daily, weekly, and yearly performance at a glance.
+Tendies tracks your realized P&L from day trading — automatically. Connect your brokerage account and see your daily, weekly, and yearly performance at a glance.
 
 Hang tight — we'll be in touch soon.
 

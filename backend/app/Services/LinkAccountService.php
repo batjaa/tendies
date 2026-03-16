@@ -24,11 +24,11 @@ class LinkAccountService
      *     ├─ same user?        ├─ link session exists?
      *     │  → refresh tokens  │  → create under session's user
      *     │                    │
-     *     ├─ anon user?        ├─ waitlist invite?
-     *     │  → claim (FOR      │  → create User (with email) + TradingAccount + trial
-     *     │    UPDATE lock)    │
-     *     │                    └─ neither?
-     *     └─ other registered?    → create anonymous User + TradingAccount
+     *     ├─ anon user?        └─ neither?
+     *     │  → claim (FOR         → create anonymous User + TradingAccount
+     *     │    UPDATE lock)
+     *     │
+     *     └─ other registered?
      *        → reject 409
      *
      * @return array{user: User, trading_account: TradingAccount, is_new_user: bool}
@@ -37,8 +37,6 @@ class LinkAccountService
         array $hashes,
         array $tokenData,
         ?User $authenticatedUser = null,
-        ?string $inviteEmail = null,
-        ?string $inviteName = null,
     ): array {
         // Check if any incoming hash already belongs to an existing TradingAccount.
         $existingHash = TradingAccountHash::whereIn('hash_value', $hashes)
@@ -49,7 +47,7 @@ class LinkAccountService
             return $this->handleExistingAccount($existingHash->tradingAccount, $tokenData, $authenticatedUser);
         }
 
-        return $this->handleNewAccount($hashes, $tokenData, $authenticatedUser, $inviteEmail, $inviteName);
+        return $this->handleNewAccount($hashes, $tokenData, $authenticatedUser);
     }
 
     /**
@@ -109,22 +107,11 @@ class LinkAccountService
         array $hashes,
         array $tokenData,
         ?User $authenticatedUser,
-        ?string $inviteEmail,
-        ?string $inviteName,
     ): array {
         $isNewUser = false;
 
         if ($authenticatedUser) {
             $user = $authenticatedUser;
-        } elseif ($inviteEmail) {
-            // Waitlist invite — create user with email.
-            $user = User::create([
-                'name' => $inviteName ?? 'Tendies User',
-                'email' => $inviteEmail,
-                'password' => Str::random(32),
-                'trial_ends_at' => now()->addDays(7),
-            ]);
-            $isNewUser = true;
         } else {
             // Anonymous user.
             $user = User::create([

@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Exceptions\SchwabAuthException;
 use App\Models\TradingAccount;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class SchwabService
 {
@@ -19,6 +22,23 @@ class SchwabService
         ]);
 
         return config('schwab.authorize_url') . '?' . $params;
+    }
+
+    /**
+     * Create a link session and redirect the user to Schwab OAuth.
+     * After Schwab callback, the user will be redirected to $returnUrl.
+     */
+    public function redirectToAuthorize(User $user, string $returnUrl): RedirectResponse
+    {
+        $sessionId = Str::uuid()->toString();
+
+        Cache::put("link_session:{$sessionId}", ['user_id' => $user->id], now()->addMinutes(10));
+        session(['link_session_id' => $sessionId]);
+
+        $state = bin2hex(random_bytes(16));
+        Cache::put("schwab_state:{$state}", $returnUrl, now()->addMinutes(10));
+
+        return redirect($this->getAuthorizeUrl($state));
     }
 
     public function exchangeCode(string $code): array

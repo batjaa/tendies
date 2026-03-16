@@ -49,38 +49,15 @@ class SchwabCallbackController extends Controller
             $request->session()->forget('link_session_id');
         }
 
-        // Check for waitlist invite token.
-        $inviteEmail = null;
-        $inviteName = null;
-        $inviteToken = $request->session()->get('waitlist_invite_token');
-        if ($inviteToken) {
-            $waitlistEntry = \App\Models\WaitlistEntry::where('invite_token', $inviteToken)
-                ->where('status', 'invited')
-                ->first();
-            if ($waitlistEntry && ! $waitlistEntry->isExpired()) {
-                $inviteEmail = $waitlistEntry->email;
-                $inviteName = $waitlistEntry->name;
-            }
-            $request->session()->forget('waitlist_invite_token');
-        }
+        // Waitlist acceptance handled by WaitlistRegistrationController.
 
         $result = $linkService->resolveOrCreateAccount(
             $hashes,
             $tokenData,
             $authenticatedUser,
-            $inviteEmail,
-            $inviteName,
         );
 
         $user = $result['user'];
-
-        // Mark waitlist entry as accepted.
-        if ($inviteToken && isset($waitlistEntry) && $waitlistEntry->status === 'invited') {
-            $waitlistEntry->update([
-                'status' => 'accepted',
-                'accepted_at' => now(),
-            ]);
-        }
 
         Auth::login($user);
 
