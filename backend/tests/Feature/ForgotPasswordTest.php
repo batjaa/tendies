@@ -51,7 +51,6 @@ class ForgotPasswordTest extends TestCase
             'token' => $token,
             'email' => $user->email,
             'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
         ]);
 
         $response->assertRedirect(route('account.show'));

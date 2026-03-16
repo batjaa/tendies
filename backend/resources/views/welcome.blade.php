@@ -339,7 +339,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
 
         <div class="flex items-center justify-center gap-2 mb-8 reveal">
             <span class="w-2.5 h-2.5 rounded-full bg-gain inline-block"></span>
-            <span class="text-content-muted text-[0.9rem]"><strong class="text-content">{{ $waitlistCount }}</strong> {{ Str::plural('person', $waitlistCount) }} on the waitlist</span>
+            <span class="text-content-muted text-[0.9rem]"><strong class="text-content" id="waitlist-count">{{ $waitlistCount }}</strong> {{ Str::plural('person', $waitlistCount) }} on the waitlist</span>
         </div>
 
         <div id="waitlist-form-wrapper" class="reveal">
@@ -512,6 +512,10 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
 
                 document.getElementById('waitlist-form-wrapper').classList.add('hidden');
                 document.getElementById('waitlist-success').classList.remove('hidden');
+
+                // Update counter immediately
+                const countEl = document.getElementById('waitlist-count');
+                if (countEl) countEl.textContent = parseInt(countEl.textContent, 10) + 1;
             } catch (err) {
                 errorEl.textContent = err.message;
                 errorEl.classList.remove('hidden');

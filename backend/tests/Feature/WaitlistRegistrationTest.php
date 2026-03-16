@@ -39,7 +39,6 @@ class WaitlistRegistrationTest extends TestCase
                 'email' => 'trader@example.com',
                 'name' => 'Test Trader',
                 'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'waitlist_invite_token' => $entry->invite_token,
             ]);
 
@@ -100,7 +99,6 @@ class WaitlistRegistrationTest extends TestCase
                 'email' => 'taken@example.com',
                 'name' => 'Test',
                 'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'waitlist_invite_token' => $entry->invite_token,
             ]);
 
@@ -123,7 +121,6 @@ class WaitlistRegistrationTest extends TestCase
                 'email' => 'active@example.com',
                 'name' => 'Test',
                 'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'waitlist_invite_token' => $entry->invite_token,
             ]);
 
@@ -140,7 +137,6 @@ class WaitlistRegistrationTest extends TestCase
                 'email' => $entry->email,
                 'name' => 'Test',
                 'password' => 'short',
-                'password_confirmation' => 'short',
                 'waitlist_invite_token' => $entry->invite_token,
             ]);
 
@@ -156,7 +152,6 @@ class WaitlistRegistrationTest extends TestCase
                 'email' => $entry->email,
                 'name' => 'Test',
                 'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'waitlist_invite_token' => $entry->invite_token,
             ]);
 

@@ -34,7 +34,7 @@ class WaitlistRegistrationController extends Controller
         $validated = $request->validate([
             'email' => 'required|email|unique:users,email',
             'name' => 'nullable|string|max:255',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8',
             'waitlist_invite_token' => 'required|string',
         ]);
 

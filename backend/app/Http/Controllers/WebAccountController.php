@@ -30,7 +30,7 @@ class WebAccountController extends Controller
     {
         $request->validate([
             'current_password' => 'required|current_password',
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', Password::min(8)],
         ]);
 
         $request->user()->update([

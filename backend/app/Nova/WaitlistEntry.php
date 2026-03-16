@@ -65,7 +65,7 @@ class WaitlistEntry extends Resource
                 $result = app(WaitlistService::class)->sendInvites($models);
 
                 return Action::message("Sent {$result['sent']} invites (skipped {$result['skipped']})");
-            }),
+            })->showInline(),
         ];
     }
 }

@@ -19,19 +19,13 @@
             @enderror
         </div>
 
-        <div class="mb-4">
+        <div class="mb-0">
             <label class="block text-[0.78rem] font-medium text-content-muted mb-1.5">New password</label>
             <input type="password" name="password" placeholder="At least 8 characters"
                 class="w-full px-3.5 py-2.5 bg-surface border border-edge rounded-[10px] text-[0.9rem] text-content placeholder:text-content-dim outline-none transition-colors focus:border-gain-muted">
             @error('password')
                 <div class="text-[0.75rem] text-red-400 mt-1">{{ $message }}</div>
             @enderror
-        </div>
-
-        <div class="mb-0">
-            <label class="block text-[0.78rem] font-medium text-content-muted mb-1.5">Confirm new password</label>
-            <input type="password" name="password_confirmation"
-                class="w-full px-3.5 py-2.5 bg-surface border border-edge rounded-[10px] text-[0.9rem] text-content placeholder:text-content-dim outline-none transition-colors focus:border-gain-muted">
         </div>
 
         <button type="submit" class="block w-full mt-6 py-3 bg-gain text-black font-semibold text-[0.92rem] rounded-[10px] border-0 cursor-pointer transition-opacity hover:opacity-85">
