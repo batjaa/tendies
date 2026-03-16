@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\SchwabCallbackController;
 use App\Http\Controllers\WaitlistRegistrationController;
+use App\Http\Controllers\WebAccountController;
+use App\Http\Controllers\WebAuthController;
 use App\Services\SchwabService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -66,7 +69,25 @@ Route::get('/auth/waitlist/register', [WaitlistRegistrationController::class, 's
     ->name('auth.waitlist.register');
 Route::post('/auth/waitlist/register', [WaitlistRegistrationController::class, 'register']);
 
+// Guest-only auth routes
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [WebAuthController::class, 'login']);
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showForm'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [ForgotPasswordController::class, 'reset'])->name('password.update');
+});
+
 Route::middleware('auth')->group(function () {
+    Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
+    Route::get('/account', [WebAccountController::class, 'show'])->name('account.show');
+    Route::get('/account/password', [WebAccountController::class, 'showPasswordForm'])->name('account.password');
+    Route::post('/account/password', [WebAccountController::class, 'updatePassword']);
+    Route::get('/account/connect/schwab', [WebAccountController::class, 'connectSchwab'])->name('account.connect.schwab');
+    Route::post('/account/billing', [WebAccountController::class, 'billing'])->name('account.billing');
+    Route::post('/account/checkout', [WebAccountController::class, 'checkout'])->name('account.checkout');
+
     Route::get('/onboarding/connect', [OnboardingController::class, 'showConnect'])
         ->name('onboarding.connect');
     Route::get('/onboarding/connect/schwab', [OnboardingController::class, 'connectSchwab'])

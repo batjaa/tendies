@@ -36,6 +36,7 @@
                 <li><a href="#direct" class="nav-link text-content-muted no-underline text-sm hover:text-content">Direct Mode</a></li>
             </ul>
             <div class="flex items-center gap-3">
+                <a href="/login" class="text-content-muted text-[0.85rem] no-underline hover:text-content transition-colors">Log In</a>
                 <a href="{{ $waitlistMode ? '#cli' : '#pricing' }}" class="bg-gain text-black px-[18px] py-2 rounded-lg font-semibold text-[0.85rem] no-underline transition-opacity hover:opacity-85">Get Started</a>
                 <button id="mobile-menu-btn" class="md:hidden text-content-muted p-1" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>

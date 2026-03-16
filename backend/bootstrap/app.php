@@ -32,21 +32,27 @@ return Application::configure(basePath: dirname(__DIR__))
         // This avoids depending on session cookies surviving the cross-site redirect.
         $middleware->appendToGroup('web', \App\Http\Middleware\AutoLoginFromCache::class);
 
-        // Redirect unauthenticated web requests (Passport /oauth/authorize) to Schwab OAuth.
-        // API requests get a plain 401 JSON response instead.
+        // Redirect authenticated users away from guest-only pages.
+        $middleware->redirectUsersTo('/account');
+
+        // Redirect unauthenticated web requests.
+        // Passport /oauth/* paths → Schwab OAuth (CLI PKCE flow).
+        // Everything else → web login page.
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->expectsJson()) {
                 return null;
             }
 
-            $passportAuthorizeUrl = $request->fullUrl();
+            // Passport authorize flow — redirect to Schwab OAuth.
+            if (str_starts_with($request->path(), 'oauth/')) {
+                $passportAuthorizeUrl = $request->fullUrl();
+                $state = bin2hex(random_bytes(16));
+                Cache::put("schwab_state:{$state}", $passportAuthorizeUrl, now()->addMinutes(10));
 
-            $state = bin2hex(random_bytes(16));
+                return app(SchwabService::class)->getAuthorizeUrl($state);
+            }
 
-            // Store in cache (database-backed) instead of session — survives cross-site redirects.
-            Cache::put("schwab_state:{$state}", $passportAuthorizeUrl, now()->addMinutes(10));
-
-            return app(SchwabService::class)->getAuthorizeUrl($state);
+            return route('login');
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
