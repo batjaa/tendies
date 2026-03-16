@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\SchwabService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
 class WebAccountController extends Controller
@@ -12,7 +11,7 @@ class WebAccountController extends Controller
     public function show()
     {
         $user = auth()->user();
-        $user->load('tradingAccounts.hashes');
+        $user->load('tradingAccounts.hashes', 'subscriptions');
 
         return view('account.show', [
             'user' => $user,
@@ -34,7 +33,7 @@ class WebAccountController extends Controller
         ]);
 
         $request->user()->update([
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
         ]);
 
         return back()->with('success', 'Password updated successfully.');

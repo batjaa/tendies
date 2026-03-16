@@ -9,10 +9,6 @@ class WebAuthController extends Controller
 {
     public function showLogin()
     {
-        if (Auth::check()) {
-            return redirect('/account');
-        }
-
         return view('auth.login');
     }
 

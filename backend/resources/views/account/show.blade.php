@@ -92,26 +92,12 @@
                 Manage Billing
             </button>
         </form>
-    @elseif($tier === 'trial')
-        <p class="text-[0.85rem] text-content-muted mb-4">Your trial ends {{ $user->trial_ends_at->format('F j, Y') }}. Subscribe to keep using broker mode.</p>
-        <div class="flex gap-3">
-            <form method="POST" action="{{ route('account.checkout') }}" class="flex-1">
-                @csrf
-                <input type="hidden" name="plan" value="monthly">
-                <button type="submit" class="block w-full py-2.5 text-center text-[0.85rem] font-medium border border-edge rounded-[10px] text-content-muted cursor-pointer bg-transparent transition-all hover:text-content hover:border-content-dim">
-                    $5/month
-                </button>
-            </form>
-            <form method="POST" action="{{ route('account.checkout') }}" class="flex-1">
-                @csrf
-                <input type="hidden" name="plan" value="yearly">
-                <button type="submit" class="block w-full py-2.5 text-center text-[0.85rem] font-semibold bg-gain text-black rounded-[10px] border-0 cursor-pointer transition-opacity hover:opacity-85">
-                    $40/year
-                </button>
-            </form>
-        </div>
     @else
-        <p class="text-[0.85rem] text-content-muted mb-4">Subscribe to access broker mode, the menu bar app, and managed token refresh.</p>
+        @if($tier === 'trial')
+            <p class="text-[0.85rem] text-content-muted mb-4">Your trial ends {{ $user->trial_ends_at->format('F j, Y') }}. Subscribe to keep using broker mode.</p>
+        @else
+            <p class="text-[0.85rem] text-content-muted mb-4">Subscribe to access broker mode, the menu bar app, and managed token refresh.</p>
+        @endif
         <div class="flex gap-3">
             <form method="POST" action="{{ route('account.checkout') }}" class="flex-1">
                 @csrf
@@ -132,12 +118,8 @@
 </div>
 
 {{-- Account Actions --}}
-<div class="flex items-center justify-between">
+<div class="mt-1">
     <a href="{{ route('account.password') }}" class="text-[0.85rem] text-content-muted no-underline hover:text-content transition-colors">Change Password</a>
-    <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button type="submit" class="text-[0.85rem] text-content-dim hover:text-content transition-colors cursor-pointer bg-transparent border-0">Log Out</button>
-    </form>
 </div>
 
 @endsection
