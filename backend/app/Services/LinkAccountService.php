@@ -32,7 +32,7 @@ class LinkAccountService
      *     └─ other registered?
      *        → reject 409
      *
-     * @return array{user: User, trading_account: TradingAccount, is_new_user: bool}
+     * @return array{user: User, trading_account: TradingAccount, is_new_user: bool, is_new_account: bool}
      */
     public function resolveOrCreateAccount(
         array $hashes,
@@ -65,7 +65,7 @@ class LinkAccountService
         if (! $authenticatedUser || $authenticatedUser->id === $existingUser->id) {
             $this->schwab->storeTokens($tradingAccount, $tokenData);
 
-            return ['user' => $existingUser, 'trading_account' => $tradingAccount, 'is_new_user' => false];
+            return ['user' => $existingUser, 'trading_account' => $tradingAccount, 'is_new_user' => false, 'is_new_account' => false];
         }
 
         // Claimable if the existing owner never authenticated themselves:
@@ -84,13 +84,13 @@ class LinkAccountService
                     $this->schwab->storeTokens($tradingAccount, $tokenData);
                     $lockedUser->delete();
 
-                    return ['user' => $authenticatedUser, 'trading_account' => $tradingAccount->fresh(), 'is_new_user' => false];
+                    return ['user' => $authenticatedUser, 'trading_account' => $tradingAccount->fresh(), 'is_new_user' => false, 'is_new_account' => false];
                 }
 
                 // No authenticated user — just refresh the anonymous user's tokens.
                 $this->schwab->storeTokens($tradingAccount, $tokenData);
 
-                return ['user' => $lockedUser, 'trading_account' => $tradingAccount, 'is_new_user' => false];
+                return ['user' => $lockedUser, 'trading_account' => $tradingAccount, 'is_new_user' => false, 'is_new_account' => false];
             });
         }
 
@@ -126,7 +126,7 @@ class LinkAccountService
 
         $tradingAccount = $this->createTradingAccount($user, $hashes, $tokenData);
 
-        return ['user' => $user, 'trading_account' => $tradingAccount, 'is_new_user' => $isNewUser];
+        return ['user' => $user, 'trading_account' => $tradingAccount, 'is_new_user' => $isNewUser, 'is_new_account' => true];
     }
 
     /**

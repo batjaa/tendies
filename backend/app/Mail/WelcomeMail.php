@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\WaitlistEntry;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -10,25 +10,25 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class WaitlistInviteMail extends Mailable implements ShouldQueue
+class WelcomeMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
     public function __construct(
-        public WaitlistEntry $entry,
+        public User $user,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your invite is ready',
+            subject: "You're in — here's how to get started",
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'mail.waitlist-invite',
+            view: 'mail.welcome',
         );
     }
 }

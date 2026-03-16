@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WelcomeMail;
 use App\Services\LinkAccountService;
 use App\Services\SchwabService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 
 class SchwabCallbackController extends Controller
 {
@@ -58,6 +60,10 @@ class SchwabCallbackController extends Controller
         );
 
         $user = $result['user'];
+
+        if ($result['is_new_account'] && $user->email) {
+            Mail::to($user)->queue(new WelcomeMail($user));
+        }
 
         Auth::login($user);
 

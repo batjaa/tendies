@@ -17,7 +17,7 @@ class WaitlistInviteMailTest extends TestCase
         $entry = WaitlistEntry::factory()->invited()->create();
         $mail = new WaitlistInviteMail($entry);
 
-        $mail->assertHasSubject("You're invited to Tendies!");
+        $mail->assertHasSubject('Your invite is ready');
     }
 
     public function test_body_contains_invite_link(): void

@@ -17,7 +17,7 @@ class WaitlistConfirmationMailTest extends TestCase
         $entry = WaitlistEntry::factory()->create();
         $mail = new WaitlistConfirmationMail($entry, 5);
 
-        $mail->assertHasSubject("You're on the Tendies waitlist!");
+        $mail->assertHasSubject("You're #5 on the waitlist");
     }
 
     public function test_body_contains_position(): void
@@ -28,6 +28,7 @@ class WaitlistConfirmationMailTest extends TestCase
         $rendered = $mail->render();
 
         $this->assertStringContainsString('#42', $rendered);
+        $this->assertStringContainsString('in line for early access', $rendered);
     }
 
     public function test_is_queueable(): void

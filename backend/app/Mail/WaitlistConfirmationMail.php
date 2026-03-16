@@ -22,14 +22,14 @@ class WaitlistConfirmationMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "You're on the Tendies waitlist!",
+            subject: "You're #{$this->position} on the waitlist",
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.waitlist-confirmation',
+            view: 'mail.waitlist-confirmation',
         );
     }
 }
