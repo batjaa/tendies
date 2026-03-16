@@ -69,7 +69,7 @@
         </div>
 
         {{-- Dashboard button --}}
-        <a href="/" class="block w-full mt-5 py-3 text-center text-content-muted text-[0.88rem] font-medium border border-edge rounded-[10px] no-underline transition-all hover:text-content hover:border-content-dim">
+        <a href="/account" class="block w-full mt-5 py-3 text-center text-content-muted text-[0.88rem] font-medium border border-edge rounded-[10px] no-underline transition-all hover:text-content hover:border-content-dim">
             Go to Dashboard
         </a>
     </div>
