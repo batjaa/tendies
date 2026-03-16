@@ -6,10 +6,11 @@ use App\Models\User;
 use App\Models\WaitlistEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\CreatesPersonalAccessClient;
 
 class WaitlistRegistrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesPersonalAccessClient, RefreshDatabase;
 
     public function test_get_without_session_token_returns_403(): void
     {
@@ -88,9 +89,10 @@ class WaitlistRegistrationTest extends TestCase
         $this->assertDatabaseCount('users', 0);
     }
 
-    public function test_post_with_duplicate_email_fails_validation(): void
+    public function test_post_replaces_orphaned_user_with_same_email(): void
     {
-        User::factory()->create(['email' => 'taken@example.com']);
+        // Orphaned user (no Passport tokens) — should be replaced.
+        $orphan = User::factory()->create(['email' => 'taken@example.com']);
         $entry = WaitlistEntry::factory()->invited()->create(['email' => 'taken@example.com']);
 
         $response = $this->withSession(['waitlist_invite_token' => $entry->invite_token])
@@ -102,7 +104,31 @@ class WaitlistRegistrationTest extends TestCase
                 'waitlist_invite_token' => $entry->invite_token,
             ]);
 
+        $response->assertRedirect('/onboarding/connect');
+        $this->assertDatabaseMissing('users', ['id' => $orphan->id]);
+        $this->assertDatabaseHas('users', ['email' => 'taken@example.com']);
+    }
+
+    public function test_post_with_active_user_email_fails_validation(): void
+    {
+        $this->createPersonalAccessClient();
+
+        // Active user (has Passport tokens) — should NOT be replaced.
+        $activeUser = User::factory()->create(['email' => 'active@example.com']);
+        $activeUser->createToken('CLI');
+        $entry = WaitlistEntry::factory()->invited()->create(['email' => 'active@example.com']);
+
+        $response = $this->withSession(['waitlist_invite_token' => $entry->invite_token])
+            ->post('/auth/waitlist/register', [
+                'email' => 'active@example.com',
+                'name' => 'Test',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'waitlist_invite_token' => $entry->invite_token,
+            ]);
+
         $response->assertSessionHasErrors('email');
+        $this->assertDatabaseHas('users', ['id' => $activeUser->id]);
     }
 
     public function test_post_with_password_validation_failures(): void

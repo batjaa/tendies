@@ -27,6 +27,10 @@ class WaitlistRegistrationController extends Controller
 
     public function register(Request $request)
     {
+        // Remove orphaned users (created by old waitlist flow, never logged in)
+        // so the email uniqueness check doesn't block re-registration.
+        $this->removeOrphanedUser($request->input('email'));
+
         $validated = $request->validate([
             'email' => 'required|email|unique:users,email',
             'name' => 'nullable|string|max:255',
@@ -61,6 +65,23 @@ class WaitlistRegistrationController extends Controller
         $request->session()->forget('waitlist_invite_token');
 
         return redirect('/onboarding/connect');
+    }
+
+    /**
+     * Delete an orphaned user (auto-created, never logged in) so the email
+     * is available for proper registration. Safe because these users have
+     * no Passport tokens and a random password nobody knows.
+     */
+    private function removeOrphanedUser(?string $email): void
+    {
+        if (! $email) {
+            return;
+        }
+
+        $existing = User::where('email', $email)->first();
+        if ($existing && $existing->tokens()->count() === 0) {
+            $existing->delete();
+        }
     }
 
     private function resolveEntry(Request $request): ?WaitlistEntry

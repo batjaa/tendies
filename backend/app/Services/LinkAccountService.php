@@ -24,9 +24,10 @@ class LinkAccountService
      *     ├─ same user?        ├─ link session exists?
      *     │  → refresh tokens  │  → create under session's user
      *     │                    │
-     *     ├─ anon user?        └─ neither?
-     *     │  → claim (FOR         → create anonymous User + TradingAccount
-     *     │    UPDATE lock)
+     *     ├─ claimable?        └─ neither?
+     *     │  (anon or never      → create anonymous User + TradingAccount
+     *     │   logged in) → claim
+     *     │  (FOR UPDATE lock)
      *     │
      *     └─ other registered?
      *        → reject 409
@@ -67,23 +68,20 @@ class LinkAccountService
             return ['user' => $existingUser, 'trading_account' => $tradingAccount, 'is_new_user' => false];
         }
 
-        // Anonymous user owns this account — claim it (with lock to prevent race).
-        if ($existingUser->isAnonymous()) {
+        // Claimable if the existing owner never authenticated themselves:
+        // anonymous (no email) or has no Passport tokens (auto-created by old
+        // waitlist flow with a random password, never logged in from CLI/app).
+        if ($this->isClaimable($existingUser)) {
             return DB::transaction(function () use ($tradingAccount, $existingUser, $tokenData, $authenticatedUser) {
-                // Lock the user row to prevent concurrent claims.
                 $lockedUser = User::lockForUpdate()->find($existingUser->id);
 
-                // Double-check still anonymous after acquiring lock.
-                if (! $lockedUser->isAnonymous()) {
+                if (! $this->isClaimable($lockedUser)) {
                     abort(409, 'This Schwab account is already linked to another user');
                 }
 
                 if ($authenticatedUser) {
-                    // Transfer the trading account to the authenticated user.
                     $tradingAccount->update(['user_id' => $authenticatedUser->id]);
                     $this->schwab->storeTokens($tradingAccount, $tokenData);
-
-                    // Clean up the orphaned anonymous user.
                     $lockedUser->delete();
 
                     return ['user' => $authenticatedUser, 'trading_account' => $tradingAccount->fresh(), 'is_new_user' => false];
@@ -129,6 +127,15 @@ class LinkAccountService
         $tradingAccount = $this->createTradingAccount($user, $hashes, $tokenData);
 
         return ['user' => $user, 'trading_account' => $tradingAccount, 'is_new_user' => $isNewUser];
+    }
+
+    /**
+     * A user is claimable if they never authenticated themselves:
+     * anonymous (no email) or auto-created with no Passport tokens.
+     */
+    private function isClaimable(User $user): bool
+    {
+        return $user->isAnonymous() || $user->tokens()->count() === 0;
     }
 
     private function createTradingAccount(User $user, array $hashes, array $tokenData): TradingAccount

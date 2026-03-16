@@ -112,6 +112,35 @@ class SchwabCallbackTest extends TestCase
         $this->assertDatabaseHas('schwab_tokens', ['trading_account_id' => $user->tradingAccounts->first()->id]);
     }
 
+    // --- Claiming accounts from duplicate users ---
+
+    public function test_authenticated_user_claims_account_from_never_logged_in_user(): void
+    {
+        $this->fakeSuccessfulSchwabApi();
+
+        // Old waitlist flow created a user with a random password (no Passport tokens).
+        $oldUser = User::factory()->create(['email' => 'old@example.com']);
+        $account = TradingAccount::factory()->create(['user_id' => $oldUser->id]);
+        $account->hashes()->create(['hash_value' => 'hash-a']);
+
+        // New user registered properly via onboarding.
+        $newUser = User::factory()->onTrial()->create(['email' => 'new@example.com']);
+
+        // Set up link session so callback knows about the authenticated user.
+        $linkSessionId = 'test-link-session';
+        Cache::put("link_session:{$linkSessionId}", ['user_id' => $newUser->id], now()->addMinutes(10));
+
+        $response = $this->withSession(['link_session_id' => $linkSessionId])
+            ->get("/auth/schwab/callback?state={$this->validState}&code=auth-code");
+
+        $response->assertRedirect();
+
+        // Trading account transferred to new user, old user deleted.
+        $this->assertDatabaseMissing('users', ['id' => $oldUser->id]);
+        $this->assertDatabaseHas('trading_accounts', ['user_id' => $newUser->id]);
+        $this->assertDatabaseCount('trading_accounts', 1);
+    }
+
     // --- Returning user (same hashes) ---
 
     public function test_returning_user_recognized_by_account_hash(): void
