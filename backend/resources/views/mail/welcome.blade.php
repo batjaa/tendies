@@ -69,9 +69,9 @@
     </div>
 
     {{-- CTAs --}}
-    <a href="https://github.com/nicktendies/tendies-app/releases/latest" style="display:block;width:100%;text-align:center;padding:14px 24px;background-color:#1a8a42;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;margin:24px 0 12px;box-sizing:border-box;">Download Tendies.app</a>
+    <a href="https://github.com/batjaa/tendies-app/releases/latest" style="display:block;width:100%;text-align:center;padding:14px 24px;background-color:#1a8a42;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;margin:24px 0 12px;box-sizing:border-box;">Download Tendies.app</a>
 
-    <a href="https://github.com/nicktendies/tendies#readme" style="display:block;width:100%;text-align:center;padding:12px 24px;background-color:transparent;color:#1a1917;font-size:14px;font-weight:500;text-decoration:none;border-radius:8px;border:1px solid #e8e5e0;margin:0 0 16px;box-sizing:border-box;">View CLI Documentation</a>
+    <a href="https://github.com/batjaa/tendies#readme" style="display:block;width:100%;text-align:center;padding:12px 24px;background-color:transparent;color:#1a1917;font-size:14px;font-weight:500;text-decoration:none;border-radius:8px;border:1px solid #e8e5e0;margin:0 0 16px;box-sizing:border-box;">View CLI Documentation</a>
 
     {{-- Divider --}}
     <div style="height:1px;background-color:#e8e5e0;margin:24px 0;"></div>

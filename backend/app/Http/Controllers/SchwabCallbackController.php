@@ -61,7 +61,7 @@ class SchwabCallbackController extends Controller
 
         $user = $result['user'];
 
-        if ($result['is_new_account'] && $user->email) {
+        if ($result['is_new_account'] && $user->email && $user->tradingAccounts()->count() === 1) {
             Mail::to($user)->queue(new WelcomeMail($user));
         }
 
