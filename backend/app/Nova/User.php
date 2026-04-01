@@ -4,6 +4,8 @@ namespace App\Nova;
 
 use Illuminate\Http\Request;
 use Laravel\Nova\Auth\PasswordValidationRules;
+use Laravel\Nova\Fields\Badge;
+use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\Gravatar;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\Password;
@@ -63,6 +65,18 @@ class User extends Resource
                 ->onlyOnForms()
                 ->creationRules($this->passwordRules())
                 ->updateRules($this->optionalPasswordRules()),
+
+            Badge::make('Tier', function () {
+                return $this->resource->tier();
+            })->map([
+                'pro' => 'success',
+                'trial' => 'warning',
+                'free' => 'info',
+            ])->exceptOnForms(),
+
+            DateTime::make('Pro Until', 'pro_until')
+                ->nullable()
+                ->help('Grant pro access until this date. Leave empty for no grant.'),
         ];
     }
 

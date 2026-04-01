@@ -36,6 +36,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'password' => 'hashed',
+            'pro_until' => 'datetime',
         ];
     }
 
@@ -51,7 +52,7 @@ class User extends Authenticatable
 
     public function tier(): string
     {
-        if ($this->subscribed('default')) {
+        if ($this->hasProGrant() || $this->subscribed('default')) {
             return 'pro';
         }
         if ($this->onGenericTrial()) {
@@ -59,6 +60,11 @@ class User extends Authenticatable
         }
 
         return 'free';
+    }
+
+    public function hasProGrant(): bool
+    {
+        return $this->pro_until && $this->pro_until->isFuture();
     }
 
     public function isAnonymous(): bool
