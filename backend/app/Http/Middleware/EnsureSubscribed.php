@@ -12,7 +12,7 @@ class EnsureSubscribed
     {
         $user = $request->user();
 
-        if ($user->subscribed('default') || $user->onGenericTrial()) {
+        if ($user->tier() !== 'free') {
             return $next($request);
         }
 

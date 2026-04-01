@@ -120,7 +120,7 @@ class LinkAccountService
         }
 
         // Grant trial if user doesn't have a subscription or trial.
-        if (! $user->trial_ends_at && ! $user->subscribed('default')) {
+        if (! $user->trial_ends_at && ! $user->subscribed('default') && ! $user->hasProGrant()) {
             $user->update(['trial_ends_at' => now()->addDays(7)]);
         }
 

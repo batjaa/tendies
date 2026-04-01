@@ -22,6 +22,13 @@ class SubscriptionController extends Controller
             ]);
         }
 
+        if ($user->hasProGrant()) {
+            return response()->json([
+                'status' => 'active',
+                'pro_until' => $user->pro_until->toIso8601String(),
+            ]);
+        }
+
         if ($user->onGenericTrial()) {
             return response()->json([
                 'status' => 'trialing',
