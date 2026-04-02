@@ -1,2 +1,4 @@
 User-agent: *
 Disallow:
+
+Sitemap: https://mytendies.app/sitemap.xml

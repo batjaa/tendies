@@ -9,6 +9,14 @@
     <meta property="og:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for Schwab.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://mytendies.app">
+    <meta property="og:image" content="https://mytendies.app/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tendies — Realized Schwab P&L">
+    <meta name="twitter:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for Schwab.">
+    <meta name="twitter:image" content="https://mytendies.app/og-image.png">
+    <link rel="canonical" href="https://mytendies.app">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍗</text></svg>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +24,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     @vite(['resources/css/app.css'])
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Tendies",
+        "description": "Track realized trading gains and losses from Schwab with FIFO lot matching. Free CLI tool and macOS menu bar app.",
+        "url": "https://mytendies.app",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "macOS, Linux, Windows",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        }
+    }
+    </script>
 </head>
 <body class="bg-surface text-content leading-relaxed antialiased overflow-x-hidden">
 
