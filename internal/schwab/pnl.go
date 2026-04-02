@@ -21,6 +21,7 @@ type ClosedTrade struct {
 	RealizedPnL      float64
 	ClosePrice       float64
 	CloseInstruction string // e.g. "SELL", "BUY_TO_CLOSE"
+	AssetType        string // "EQUITY", "OPTION", or "FUTURE"
 	MatchedOpenings  []MatchedOpening
 }
 
@@ -329,6 +330,7 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 				RealizedPnL:      pnl,
 				ClosePrice:       t.price,
 				CloseInstruction: t.instruction(),
+				AssetType:        t.assetType,
 				MatchedOpenings:  matchedOpenings,
 			})
 		}

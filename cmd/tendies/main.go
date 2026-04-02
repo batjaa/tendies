@@ -58,6 +58,7 @@ type cliOptions struct {
 	showYear       bool
 	debug          bool
 	symbols        string
+	tradeType      string
 	refreshDetails bool
 	accountID      string
 	showCfg        bool
@@ -89,7 +90,7 @@ func main() {
 	accountCmd := &cobra.Command{
 		Use:     "account",
 		Aliases: []string{"accounts"},
-		Short:   "Manage Schwab accounts",
+		Short:   "Manage your Tendies account and linked brokerages",
 	}
 	accountListCmd := &cobra.Command{
 		Use:   "list",
@@ -103,7 +104,7 @@ func main() {
 	}
 	accountLinkCmd := &cobra.Command{
 		Use:   "link",
-		Short: "Link a new Schwab account",
+		Short: "Connect a Schwab brokerage or re-authorize an existing one",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
@@ -113,21 +114,21 @@ func main() {
 	}
 	accountCreateCmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create a new account with email and password",
+		Short: "Create a new Tendies account with email and password",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAccountCreate()
 		},
 	}
 	accountLoginCmd := &cobra.Command{
 		Use:   "login",
-		Short: "Log in with email and password",
+		Short: "Log in to your Tendies account",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAccountLogin()
 		},
 	}
 	accountLogoutCmd := &cobra.Command{
 		Use:   "logout",
-		Short: "Remove saved token from keychain",
+		Short: "Log out and remove saved credentials",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAccountLogout(opts)
 		},
@@ -155,6 +156,7 @@ func main() {
 	rootCmd.Flags().BoolVar(&opts.showYear, "year", false, "Show realized P&L for year-to-date")
 	rootCmd.Flags().BoolVar(&opts.debug, "debug", false, "Show debug details during calculation")
 	rootCmd.Flags().StringVar(&opts.symbols, "symbol", "", "Filter symbols/underlyings (comma-separated, e.g. HD,MU)")
+	rootCmd.Flags().StringVar(&opts.tradeType, "type", "", "Filter by instrument type: equity, option, or future")
 	rootCmd.PersistentFlags().BoolVar(&opts.refreshDetails, "refresh-details", false, "Refresh cached account display details")
 	rootCmd.Flags().StringVar(&opts.accountID, "account", "", "Account hash or account number")
 	rootCmd.Flags().BoolVar(&opts.showCfg, "config", false, "Initialize/show configuration")
@@ -201,6 +203,10 @@ func runPnL(opts *cliOptions) error {
 		if err := validateTimeframeFlags(opts); err != nil {
 			return err
 		}
+	}
+
+	if opts.tradeType != "" && opts.tradeType != "equity" && opts.tradeType != "option" && opts.tradeType != "future" {
+		return fmt.Errorf("invalid --type %q: must be \"equity\", \"option\", or \"future\"", opts.tradeType)
 	}
 
 	cfg, err := config.Load()
@@ -332,6 +338,9 @@ func runPnL(opts *cliOptions) error {
 			}
 			if len(symbolFilter) > 0 {
 				s = filterSummaryBySymbols(s, symbolFilter)
+			}
+			if opts.tradeType != "" {
+				s = filterSummaryByType(s, opts.tradeType)
 			}
 			if opts.debug {
 				fmt.Fprintf(os.Stderr, "Debug: timeframe=%s account=%s trades=%d gains=%s losses=%s net=%s\n",
@@ -487,6 +496,29 @@ func filterSummaryBySymbols(summary *schwab.PnLSummary, filter map[string]struct
 	return filtered
 }
 
+func filterSummaryByType(summary *schwab.PnLSummary, tradeType string) *schwab.PnLSummary {
+	if summary == nil {
+		return summary
+	}
+	filtered := &schwab.PnLSummary{
+		Warnings: append([]string(nil), summary.Warnings...),
+	}
+	for _, t := range summary.Trades {
+		if !strings.EqualFold(t.AssetType, tradeType) {
+			continue
+		}
+		filtered.Trades = append(filtered.Trades, t)
+		filtered.TradeCount++
+		if t.RealizedPnL >= 0 {
+			filtered.TotalGain += t.RealizedPnL
+		} else {
+			filtered.TotalLoss += t.RealizedPnL
+		}
+	}
+	filtered.NetGain = filtered.TotalGain + filtered.TotalLoss
+	return filtered
+}
+
 func mapKeys(m map[string]struct{}) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
@@ -605,9 +637,9 @@ func runAccountStatus() error {
 	if bt == nil || bt.AccessToken == "" {
 		fmt.Println("Not logged in.")
 		fmt.Println()
-		fmt.Println("  tendies account link     Connect a Schwab account (anonymous)")
-		fmt.Println("  tendies account create   Create an account with email/password")
-		fmt.Println("  tendies account login    Log in to an existing account")
+		fmt.Println("  tendies account link     Connect a Schwab brokerage")
+		fmt.Println("  tendies account create   Create a Tendies account with email/password")
+		fmt.Println("  tendies account login    Log in to your Tendies account")
 		return nil
 	}
 
