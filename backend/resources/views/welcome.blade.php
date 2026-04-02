@@ -27,15 +27,15 @@
 
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
+        "@@context": "https://schema.org",
+        "@@type": "SoftwareApplication",
         "name": "Tendies",
         "description": "Track realized trading gains and losses from Schwab with FIFO lot matching. Free CLI tool and macOS menu bar app.",
         "url": "https://mytendies.app",
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "macOS, Linux, Windows",
         "offers": {
-            "@type": "Offer",
+            "@@type": "Offer",
             "price": "0",
             "priceCurrency": "USD"
         }
