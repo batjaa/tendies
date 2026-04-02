@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tendies — Realized Schwab P&L in Your Terminal</title>
-    <meta name="description" content="Track realized trading gains and losses from Schwab with FIFO lot matching. Free CLI tool and macOS menu bar app.">
-    <meta property="og:title" content="Tendies — Realized Schwab P&L">
-    <meta property="og:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for Schwab.">
+    <title>Tendies — Realized P&L in Your Terminal</title>
+    <meta name="description" content="Track realized trading gains and losses with FIFO lot matching. Free CLI tool and macOS menu bar app for day traders.">
+    <meta property="og:title" content="Tendies — Realized P&L for Day Traders">
+    <meta property="og:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for day traders.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://mytendies.app">
     <meta property="og:image" content="https://mytendies.app/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Tendies — Realized Schwab P&L">
-    <meta name="twitter:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for Schwab.">
+    <meta name="twitter:title" content="Tendies — Realized P&L for Day Traders">
+    <meta name="twitter:description" content="Your trading P&L, always visible. CLI + macOS menu bar app for day traders.">
     <meta name="twitter:image" content="https://mytendies.app/og-image.png">
     <link rel="canonical" href="https://mytendies.app">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍗</text></svg>">
@@ -30,7 +30,7 @@
         "@@context": "https://schema.org",
         "@@type": "SoftwareApplication",
         "name": "Tendies",
-        "description": "Track realized trading gains and losses from Schwab with FIFO lot matching. Free CLI tool and macOS menu bar app.",
+        "description": "Track realized trading gains and losses with FIFO lot matching. Free CLI tool and macOS menu bar app for day traders.",
         "url": "https://mytendies.app",
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "macOS, Linux, Windows",
@@ -88,7 +88,7 @@
             Your P&L, always visible.
         </h1>
         <p class="text-content-muted text-lg max-w-[520px] mx-auto mb-10 font-light leading-relaxed hero-enter hero-enter-3">
-            Track realized gains and losses from Schwab with FIFO lot matching.
+            Track realized gains and losses with FIFO lot matching.
             In your terminal or your menu bar.
         </p>
         <div class="inline-flex flex-col md:flex-row items-center gap-2 md:gap-3 bg-surface-raised border border-edge rounded-xl px-5 py-3 mb-8 font-mono text-sm hero-enter hero-enter-4">
@@ -112,7 +112,7 @@
             <div class="p-7 bg-surface-raised border border-edge-subtle rounded-[14px] transition-[border-color] duration-300 hover:border-edge reveal">
                 <span class="text-2xl mb-3.5 block">📊</span>
                 <h3 class="font-display text-[1.1rem] font-bold mb-2">FIFO Lot Matching</h3>
-                <p class="text-content-muted text-sm leading-relaxed font-light">Computes realized P&L from Schwab transactions using first-in-first-out matching, the same method used by most brokers.</p>
+                <p class="text-content-muted text-sm leading-relaxed font-light">Computes realized P&L from your brokerage transactions using first-in-first-out matching, the same method used by most brokers.</p>
             </div>
             <div class="p-7 bg-surface-raised border border-edge-subtle rounded-[14px] transition-[border-color] duration-300 hover:border-edge reveal reveal-delay-1">
                 <span class="text-2xl mb-3.5 block">📅</span>
@@ -267,7 +267,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                     Like battery percentage, but for your gains. Drill down into tickers and individual executions with FIFO-matched lots.
                 </p>
                 <p class="text-content-muted max-w-[520px] font-light leading-relaxed mt-4 text-sm">
-                    Switch accounts, auto-refresh on your schedule. No browser tabs, no Schwab UI.
+                    Switch accounts, auto-refresh on your schedule. No browser tabs, no brokerage UI.
                     Included with <strong class="text-content">Tendies Pro</strong>.
                 </p>
             </div>
@@ -290,9 +290,9 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
             <div class="bg-surface-raised border border-edge-subtle rounded-[14px] p-5 md:p-8 transition-[border-color] duration-300 hover:border-edge reveal">
                 <span class="font-mono text-[0.72rem] font-semibold uppercase tracking-wider text-gain bg-gain/10 border border-gain/15 px-2.5 py-1 rounded-md inline-block mb-4">Broker Mode</span>
                 <h3 class="font-display text-[1.15rem] font-bold mb-2.5">Convenient, with trade-offs</h3>
-                <p class="text-content-muted text-[0.88rem] font-light leading-relaxed mb-5">Your requests pass through our server, which proxies to the Schwab API on your behalf. This means you don't need your own Schwab developer credentials.</p>
+                <p class="text-content-muted text-[0.88rem] font-light leading-relaxed mb-5">Your requests pass through our server, which proxies to your broker's API on your behalf. This means you don't need your own developer credentials.</p>
                 <ul class="flex flex-col gap-2.5 list-none">
-                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🔐</span> Schwab tokens encrypted at rest (AES-256-CBC)</li>
+                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🔐</span> Broker tokens encrypted at rest (AES-256-CBC)</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">⏱</span> Transaction data cached temporarily (5 min for today, 7 days for past dates) to reduce API calls</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">👤</span> Account info stored only for authentication — trading data never linked to your identity</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🚫</span> Trading data never sold, shared, or used for analytics</li>
@@ -302,13 +302,13 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
             <div class="bg-surface-raised border border-edge-subtle rounded-[14px] p-5 md:p-8 transition-[border-color] duration-300 hover:border-edge reveal reveal-delay-1">
                 <span class="font-mono text-[0.72rem] font-semibold uppercase tracking-wider text-accent bg-accent/10 border border-accent/15 px-2.5 py-1 rounded-md inline-block mb-4">Direct Mode</span>
                 <h3 class="font-display text-[1.15rem] font-bold mb-2.5">Zero trust, nothing leaves your machine</h3>
-                <p class="text-content-muted text-[0.88rem] font-light leading-relaxed mb-5">The CLI talks to the Schwab API directly using your own developer credentials. Our server is never involved.</p>
+                <p class="text-content-muted text-[0.88rem] font-light leading-relaxed mb-5">The CLI talks to your broker's API directly using your own developer credentials. Our server is never involved.</p>
                 <ul class="flex flex-col gap-2.5 list-none">
-                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🏠</span> All API calls go from your machine to Schwab — no middleman</li>
+                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🏠</span> All API calls go from your machine to your broker — no middleman</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🔑</span> OAuth token stored in your macOS keychain</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">📖</span> CLI is open source — inspect every line</li>
                     <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">🌐</span> No server, no account, no tracking</li>
-                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">⚡</span> Requires registering your own app at developer.schwab.com</li>
+                    <li class="text-[0.85rem] text-content-muted flex items-start gap-2.5 font-light leading-normal"><span class="shrink-0 mt-px">⚡</span> Requires your own broker developer credentials</li>
                 </ul>
             </div>
         </div>
@@ -323,8 +323,8 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
             <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">1</div>
                 <div>
-                    <h4 class="font-display font-bold text-[0.95rem] mb-1">Register a Schwab app</h4>
-                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Create a developer app at <a href="https://developer.schwab.com" class="text-accent no-underline">developer.schwab.com</a> and note your client ID and secret.</p>
+                    <h4 class="font-display font-bold text-[0.95rem] mb-1">Register a developer app</h4>
+                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Create a developer app with your broker and note your client ID and secret.</p>
                 </div>
             </div>
             <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
@@ -338,7 +338,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                 <div class="font-mono text-[0.8rem] font-semibold text-accent bg-accent/10 border border-accent/15 w-8 h-8 rounded-lg flex items-center justify-center shrink-0">3</div>
                 <div>
                     <h4 class="font-display font-bold text-[0.95rem] mb-1">Authenticate directly</h4>
-                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies --direct</code> to authorize with Schwab. Token goes to your macOS keychain.</p>
+                    <p class="text-content-muted text-[0.85rem] font-light leading-relaxed">Run <code class="font-mono text-[0.8rem] bg-white/[0.04] px-1.5 py-0.5 rounded border border-edge-subtle text-content">tendies --direct</code> to authorize with your broker. Token goes to your macOS keychain.</p>
                 </div>
             </div>
             <div class="flex gap-3 md:gap-4 items-start bg-surface-raised border border-edge-subtle rounded-xl p-4 md:p-5 transition-[border-color] duration-300 hover:border-edge">
@@ -425,7 +425,7 @@ Day       <span class="gain">$1,500.00</span>      <span class="loss">-$265.44</
                     <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> Everything in CLI</li>
                     <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> macOS menu bar app</li>
                     <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> Auto-refresh on your schedule</li>
-                    <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> No Schwab developer app needed</li>
+                    <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> No developer credentials needed</li>
                     <li class="text-[0.88rem] text-content-muted flex items-center gap-2.5 font-light"><span class="text-gain text-sm shrink-0">✓</span> Managed token refresh</li>
                 </ul>
                 <a href="#" class="block text-center py-3 rounded-[10px] font-semibold text-sm no-underline mt-7 bg-gain text-black transition-opacity hover:opacity-85">Start Free Trial</a>
