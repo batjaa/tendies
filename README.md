@@ -305,3 +305,22 @@ Grant access when prompted, or check System Settings > Privacy & Security.
 
 **Schwab token refresh failed**
 Schwab refresh tokens expire after 7 days. Re-run `tendies auth login` or `tendies auth login --direct`.
+
+## Production on Coolify
+
+The root `Dockerfile` builds the Laravel backend with PHP 8.4 and Node 22.
+`compose.yml` runs the web app, one database queue worker, Nightwatch, and MySQL 8.
+CLI releases continue to use GoReleaser independently.
+
+Set production environment variables in Coolify, including the existing application
+key, Schwab OAuth settings, Stripe settings, Passport keys, and database credentials.
+Supply Nova Composer authentication as the `COMPOSER_AUTH` build secret, with runtime
+exposure disabled. Database passwords must be available during Compose interpolation.
+Persist both named volumes; preserve `storage/oauth-private.key` and
+`storage/oauth-public.key` when migrating so existing CLI tokens keep working.
+
+Workers and migrations default to disabled for migration verification. After importing
+the database and storage, set `QUEUE_WORKER_ENABLED=true` and `RUN_MIGRATIONS=true`.
+Set Coolify's application stop grace period to 960 seconds. The `/up` endpoint checks
+application health. TLS terminates at the home ingress and Coolify proxy; the backend
+already trusts forwarded proxy headers.

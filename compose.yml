@@ -1,0 +1,125 @@
+x-app: &app
+  init: true
+  stop_signal: SIGTERM
+  build:
+    context: .
+    secrets:
+      - COMPOSER_AUTH
+  environment:
+    APP_DEBUG: "false"
+    APP_ENV: "production"
+    APP_FAKER_LOCALE: ${APP_FAKER_LOCALE:-}
+    APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-}
+    APP_KEY: ${APP_KEY:-}
+    APP_LOCALE: ${APP_LOCALE:-}
+    APP_MAINTENANCE_DRIVER: "file"
+    APP_NAME: ${APP_NAME:-}
+    APP_URL: ${APP_URL:-}
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+    AWS_BUCKET: ${AWS_BUCKET:-}
+    AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    AWS_USE_PATH_STYLE_ENDPOINT: ${AWS_USE_PATH_STYLE_ENDPOINT:-}
+    BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-}
+    BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-}
+    CACHE_STORE: ${CACHE_STORE:-}
+    DB_CONNECTION: ${DB_CONNECTION:-}
+    DB_DATABASE: ${DB_DATABASE:-}
+    DB_HOST: "db"
+    DB_PASSWORD: ${DB_PASSWORD:-}
+    DB_PORT: "3306"
+    DB_USERNAME: ${DB_USERNAME:-}
+    FILESYSTEM_DISK: ${FILESYSTEM_DISK:-}
+    LOG_CHANNEL: "stderr"
+    LOG_DEPRECATIONS_CHANNEL: ${LOG_DEPRECATIONS_CHANNEL:-}
+    LOG_LEVEL: ${LOG_LEVEL:-}
+    LOG_STACK: ${LOG_STACK:-}
+    MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+    MAIL_FROM_NAME: ${MAIL_FROM_NAME:-}
+    MAIL_MAILER: ${MAIL_MAILER:-}
+    MEMCACHED_HOST: ${MEMCACHED_HOST:-}
+    NIGHTWATCH_INGEST_URI: "nightwatch:2411"
+    NIGHTWATCH_REQUEST_SAMPLE_RATE: ${NIGHTWATCH_REQUEST_SAMPLE_RATE:-}
+    NIGHTWATCH_TOKEN: ${NIGHTWATCH_TOKEN:-}
+    NOVA_LICENSE_KEY: ${NOVA_LICENSE_KEY:-}
+    POSTMARK_API_KEY: ${POSTMARK_API_KEY:-}
+    QUEUE_CONNECTION: ${QUEUE_CONNECTION:-}
+    QUEUE_WORKER_ENABLED: ${QUEUE_WORKER_ENABLED:-false}
+    REDIS_CLIENT: ${REDIS_CLIENT:-}
+    REDIS_HOST: ${REDIS_HOST:-}
+    REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    REDIS_PORT: ${REDIS_PORT:-}
+    RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    SCHWAB_CLIENT_ID: ${SCHWAB_CLIENT_ID:-}
+    SCHWAB_CLIENT_SECRET: ${SCHWAB_CLIENT_SECRET:-}
+    SCHWAB_REDIRECT_URI: ${SCHWAB_REDIRECT_URI:-}
+    SESSION_DOMAIN: ${SESSION_DOMAIN:-}
+    SESSION_DRIVER: ${SESSION_DRIVER:-}
+    SESSION_ENCRYPT: ${SESSION_ENCRYPT:-}
+    SESSION_LIFETIME: ${SESSION_LIFETIME:-}
+    SESSION_PATH: ${SESSION_PATH:-}
+    SESSION_SAME_SITE: ${SESSION_SAME_SITE:-}
+    SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-}
+    STRIPE_KEY: ${STRIPE_KEY:-}
+    STRIPE_MONTHLY_PRICE_ID: ${STRIPE_MONTHLY_PRICE_ID:-}
+    STRIPE_SECRET: ${STRIPE_SECRET:-}
+    STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    STRIPE_YEARLY_PRICE_ID: ${STRIPE_YEARLY_PRICE_ID:-}
+  volumes:
+    - app-storage:/var/www/html/storage
+  restart: unless-stopped
+  stop_grace_period: 16m
+
+services:
+  app:
+    <<: *app
+    expose:
+      - "80"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    depends_on:
+      app:
+        condition: service_healthy
+
+  nightwatch:
+    <<: *app
+    command: ["php", "artisan", "nightwatch:agent", "--no-interaction", "--listen-on=0.0.0.0:2411"]
+    depends_on:
+      app:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-tendies}
+      MYSQL_USER: ${DB_USERNAME:-tendies}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -h 127.0.0.1 -u $$MYSQL_USER -D $$MYSQL_DATABASE -e 'SELECT 1' >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  app-storage:
+  mysql-data:
+
+secrets:
+  COMPOSER_AUTH:
+    environment: COMPOSER_AUTH

@@ -1,0 +1,15 @@
+**/.env
+**/.env.*
+**/auth.json
+.git
+**/vendor
+**/node_modules
+backend/storage
+backend/bootstrap/cache/*.php
+backend/public/build
+backend/public/hot
+backend/public/storage
+backend/public/vendor
+**/tests
+docs
+*.key
