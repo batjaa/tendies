@@ -100,14 +100,14 @@ services:
         condition: service_healthy
 
   db:
-    image: mysql:8.0
+    image: mysql:8.4.11
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-tendies}
       MYSQL_USER: ${DB_USERNAME:-tendies}
       MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql-data-v84:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -h 127.0.0.1 -u $$MYSQL_USER -D $$MYSQL_DATABASE -e 'SELECT 1' >/dev/null"]
       interval: 10s
@@ -118,7 +118,7 @@ services:
 
 volumes:
   app-storage:
-  mysql-data:
+  mysql-data-v84:
 
 secrets:
   COMPOSER_AUTH:

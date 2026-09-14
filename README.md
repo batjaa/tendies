@@ -324,3 +324,9 @@ the database and storage, set `QUEUE_WORKER_ENABLED=true` and `RUN_MIGRATIONS=tr
 Set Coolify's application stop grace period to 960 seconds. The `/up` endpoint checks
 application health. TLS terminates at the home ingress and Coolify proxy; the backend
 already trusts forwarded proxy headers.
+
+## Production database maintenance
+
+The Coolify Compose stack uses MySQL 8.4.11. Database volumes have versioned names so the pre-upgrade volumes can be retained for recovery. Back up and rehearse a restore before changing database versions; stop app writers and drain workers before the final copy.
+
+Retained old volumes are migration snapshots, not replicas. Reconcile writes made after the upgrade before any rollback; never start an older database image against an upgraded data directory.
