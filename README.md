@@ -45,7 +45,7 @@ Edit `~/.tendies/config.json` with the broker client ID you were given:
 ### Log in
 
 ```bash
-tendies auth login
+tendies account link
 ```
 
 This opens your browser for OAuth login. After authorizing, you're redirected back and the token is saved to your macOS keychain.
@@ -70,7 +70,7 @@ tendies --account=HASH_OR_NUMBER
 ### List accounts
 
 ```bash
-tendies accounts
+tendies account list
 ```
 
 ---
@@ -98,12 +98,12 @@ Edit `~/.tendies/config.json`:
 ### Log in
 
 ```bash
-tendies auth login --direct
+tendies account link --direct
 ```
 
 This prints a URL to open in your browser. After authorizing with Schwab, paste the full callback URL back into the terminal. The token is saved to your macOS keychain.
 
-> Schwab refresh tokens expire after 7 days. Re-run `tendies auth login --direct` when they expire.
+> Schwab refresh tokens expire after 7 days. Re-run `tendies account link --direct` when they expire.
 
 ### Usage
 
@@ -114,8 +114,8 @@ tendies --direct              # all timeframes
 tendies --direct --day        # today only
 tendies --direct --symbol=HD
 tendies --direct --account=HASH_OR_NUMBER
-tendies accounts --direct
-tendies accounts --direct --refresh-details   # force refresh cached names
+tendies account list --direct
+tendies account list --direct --refresh-details   # force refresh cached names
 ```
 
 ---
@@ -125,9 +125,12 @@ tendies accounts --direct --refresh-details   # force refresh cached names
 | Command | Description |
 |---|---|
 | `tendies` | Calculate and print realized P&L |
-| `tendies auth login` | Authenticate via OAuth |
-| `tendies auth logout` | Remove saved token from keychain |
-| `tendies accounts` | List accounts (number/hash/name/selected) |
+| `tendies account link` | Connect or re-authorize Schwab (browser OAuth) |
+| `tendies account create` | Create a Tendies account |
+| `tendies account login` | Log in with email/password (`--direct` uses Schwab OAuth) |
+| `tendies account status` | Show account and subscription status |
+| `tendies account logout` | Remove saved token from keychain |
+| `tendies account list` | List accounts (number/hash/name/selected) |
 | `tendies version` | Print version |
 
 | Flag | Scope | Description |
@@ -143,6 +146,11 @@ tendies accounts --direct --refresh-details   # force refresh cached names
 | `--config` | root | Initialize/show configuration |
 | `--refresh-details` | accounts | Force refresh cached account names |
 
+`tendies auth login` and `tendies auth logout` remain compatible aliases for
+`account link` and `account logout`. Direct login accepts the full callback URL,
+validates its state and redirect address, and stores tokens in the system keychain.
+Broker refresh-token rotations are saved before subsequent API requests continue.
+
 ### Debug Mode
 
 `--debug` prints timeframe boundaries, per-account summaries, calculation warnings, and closed trades with matched opening lots.
@@ -154,7 +162,15 @@ tendies accounts --direct --refresh-details   # force refresh cached names
 - Best used for **daily** or short timeframes; longer windows may be less reliable.
 - **Wash sales** are not modeled.
 - **Tax-lot optimization / broker tax adjustments** are not modeled.
-- Results may differ from Schwab due to API limitations and data-model gaps.
+- The engine uses **FIFO**, regardless of the account's Schwab lot-selection setting.
+  High Cost, LIFO, Tax Lot Optimizer, and specific-lot sales can produce different results.
+- Missing expiration data fails the calculation rather than silently omitting it.
+- Results may differ from Schwab due to missing opening history, transferred positions,
+  corporate actions, option assignment adjustments, and per-lot rounding.
+- Schwab's Realized Gain/Loss report is the reconciliation reference. Matching its
+  default method alone does not reproduce historical lot overrides or adjusted cost basis.
+  The authenticated website exposes the method, but this project does not automatically
+  discover it through the public Trader API or use private browser-session endpoints.
 
 ---
 
@@ -243,13 +259,13 @@ Edit `~/.tendies/config.json` (override the default broker URL to point at your 
 ### E2E Flow
 
 1. Start the backend: `cd backend && php artisan serve`
-2. Log in: `tendies auth login` — opens browser, completes OAuth, saves token to keychain
+2. Log in: `tendies account link` — opens browser, completes OAuth, saves token to keychain
 3. Fetch P&L: `tendies --day`
 
 For direct mode (no backend needed):
 
 1. Configure Schwab credentials in `~/.tendies/config.json`
-2. Log in: `tendies auth login --direct` — paste callback URL
+2. Log in: `tendies account link --direct` — paste callback URL
 3. Fetch P&L: `tendies --direct --day`
 
 ### Backend API Routes
@@ -275,7 +291,7 @@ cd backend && php artisan test
 
 ### Release
 
-See [RELEASE.md](RELEASE.md) for the full release process. Short version:
+See [RELEASE.md](docs/RELEASE.md) for the full release process. Short version:
 
 ```bash
 git tag v0.1.0
@@ -295,7 +311,7 @@ Set `broker_client_id` in `~/.tendies/config.json`, or use `--direct` for direct
 Set `client_id` and `client_secret` in `~/.tendies/config.json` (direct mode only).
 
 **"no broker token in keychain"** / **"no OAuth token in keychain"**
-Run `tendies auth login` (broker) or `tendies auth login --direct` (direct mode).
+Run `tendies account link` (broker) or `tendies account link --direct` (direct mode).
 
 **OAuth state mismatch**
 Retry the login — caused by browser back/forward during auth or an expired session.
@@ -304,7 +320,7 @@ Retry the login — caused by browser back/forward during auth or an expired ses
 Grant access when prompted, or check System Settings > Privacy & Security.
 
 **Schwab token refresh failed**
-Schwab refresh tokens expire after 7 days. Re-run `tendies auth login` or `tendies auth login --direct`.
+Schwab refresh tokens expire after 7 days. Re-run `tendies account link` or `tendies account link --direct`.
 
 ## Production on Coolify
 

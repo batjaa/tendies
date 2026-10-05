@@ -109,7 +109,7 @@ func main() {
 			if len(args) > 0 {
 				return fmt.Errorf("unexpected arguments: %s", strings.Join(args, " "))
 			}
-			return runAccountLink()
+			return runAccountLink(opts)
 		},
 	}
 	accountCreateCmd := &cobra.Command{
@@ -123,6 +123,9 @@ func main() {
 		Use:   "login",
 		Short: "Log in to your Tendies account",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if opts.direct {
+				return runDirectLogin()
+			}
 			return runAccountLogin()
 		},
 	}
@@ -148,7 +151,16 @@ func main() {
 			fmt.Println(version)
 		},
 	}
-	rootCmd.AddCommand(accountCmd, versionCmd)
+	// Keep the original authentication commands working for existing installs.
+	authCmd := &cobra.Command{Use: "auth", Short: "Authenticate with Schwab"}
+	authCmd.AddCommand(&cobra.Command{
+		Use: "login", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error { return runAccountLink(opts) },
+	}, &cobra.Command{
+		Use: "logout", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error { return runAccountLogout(opts) },
+	})
+	rootCmd.AddCommand(accountCmd, authCmd, versionCmd)
 
 	rootCmd.Flags().BoolVar(&opts.showDay, "day", false, "Show realized P&L for today")
 	rootCmd.Flags().BoolVar(&opts.showWeek, "week", false, "Show realized P&L for this week")
@@ -238,7 +250,7 @@ func runPnL(opts *cliOptions) error {
 			return loadErr
 		}
 		if token == nil {
-			return errors.New("no OAuth token in keychain; run `tendies auth login --direct` first")
+			return errors.New("no OAuth token in keychain; run `tendies account link --direct` first")
 		}
 		client = schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
 		if err := run("Refreshing OAuth token", func() error {
@@ -384,6 +396,16 @@ func runPnL(opts *cliOptions) error {
 	return nil
 }
 
+func newBrokerClient(cfg *config.Config) *broker.Client {
+	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
+	bc.OnTokenRefresh = func(accessToken, refreshToken string, expiry time.Time) error {
+		return config.SaveBrokerToken(&config.BrokerToken{
+			AccessToken: accessToken, RefreshToken: refreshToken, Expiry: expiry,
+		})
+	}
+	return bc
+}
+
 func buildBrokerClient(cfg *config.Config) (*broker.Client, error) {
 	clientID := cfg.BrokerClientID
 	if clientID == "" {
@@ -395,10 +417,10 @@ func buildBrokerClient(cfg *config.Config) (*broker.Client, error) {
 		return nil, err
 	}
 	if bt == nil {
-		return nil, errors.New("no broker token in keychain; run `tendies auth login` first")
+		return nil, errors.New("no broker token in keychain; run `tendies account link` first")
 	}
 
-	bc := broker.NewClient(cfg.BrokerURL, clientID)
+	bc := newBrokerClient(cfg)
 	bc.AccessToken = bt.AccessToken
 	bc.RefreshToken = bt.RefreshToken
 	bc.TokenExpiry = bt.Expiry
@@ -547,7 +569,7 @@ func runAccountCreate() error {
 		return err
 	}
 
-	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
+	bc := newBrokerClient(cfg)
 	ctx := context.Background()
 
 	// If there's an existing token (from account link), upgrade the anonymous
@@ -593,7 +615,7 @@ func runAccountLogin() error {
 		return err
 	}
 
-	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
+	bc := newBrokerClient(cfg)
 	ctx := context.Background()
 
 	resp, err := bc.AuthLogin(ctx, email, pw)
@@ -736,7 +758,7 @@ func runAccounts(opts *cliOptions) error {
 			return loadErr
 		}
 		if token == nil {
-			return errors.New("no OAuth token in keychain; run `tendies auth login --direct` first")
+			return errors.New("no OAuth token in keychain; run `tendies account link --direct` first")
 		}
 		client = schwab.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.RedirectURL)
 		if err := runWithSpinner("Refreshing OAuth token", func() error {
@@ -820,7 +842,10 @@ func runAccounts(opts *cliOptions) error {
 	return nil
 }
 
-func runAccountLink() error {
+func runAccountLink(opts *cliOptions) error {
+	if opts.direct {
+		return runDirectLogin()
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -840,7 +865,7 @@ func runAccountLink() error {
 
 // runAuthenticatedLink links a new Schwab account for an already-authenticated user.
 func runAuthenticatedLink(cfg *config.Config, bt *config.BrokerToken) error {
-	bc := broker.NewClient(cfg.BrokerURL, cfg.BrokerClientID)
+	bc := newBrokerClient(cfg)
 	bc.AccessToken = bt.AccessToken
 	bc.RefreshToken = bt.RefreshToken
 	bc.TokenExpiry = bt.Expiry
@@ -885,7 +910,7 @@ func runAnonymousLink(cfg *config.Config) error {
 		return errors.New("broker_client_id not set in config; run tendies --config")
 	}
 
-	bc := broker.NewClient(cfg.BrokerURL, clientID)
+	bc := newBrokerClient(cfg)
 	ctx := context.Background()
 
 	fmt.Println("Opening browser for Schwab authorization...")
@@ -1550,7 +1575,6 @@ func buildJSONTickers(trades []schwab.ClosedTrade, includeCloses bool) []schwab.
 
 	return tickers
 }
-
 
 func formatOptionDisplay(underlying, expiry string, strike float64, optionType string) string {
 	t, err := time.Parse("2006-01-02", expiry)

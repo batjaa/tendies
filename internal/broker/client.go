@@ -1,11 +1,11 @@
 package broker
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -78,7 +78,9 @@ type Client struct {
 	TokenExpiry  time.Time
 	QueryID      string // Unique per CLI invocation; sent as X-Query-ID for rate limiting.
 	Timezone     string // Local timezone name; sent as X-Timezone for rate limit day boundary.
-	httpClient   *http.Client
+	// OnTokenRefresh persists rotated credentials before an API request continues.
+	OnTokenRefresh func(accessToken, refreshToken string, expiry time.Time) error
+	httpClient     *http.Client
 }
 
 type tokenResponse struct {
@@ -169,11 +171,11 @@ func (c *Client) Login(ctx context.Context) error {
 	// Build and open authorize URL.
 	authURL := fmt.Sprintf("%s/oauth/authorize?%s", c.BrokerURL, url.Values{
 		"client_id":             {c.ClientID},
-		"redirect_uri":         {redirectURI},
-		"response_type":        {"code"},
-		"code_challenge":       {challenge},
+		"redirect_uri":          {redirectURI},
+		"response_type":         {"code"},
+		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
-		"state":                {state},
+		"state":                 {state},
 	}.Encode())
 
 	fmt.Println("Opening browser for login...")
@@ -271,6 +273,11 @@ func (c *Client) RefreshAccessToken(ctx context.Context) error {
 		c.RefreshToken = tok.RefreshToken
 	}
 	c.TokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn) * time.Second)
+	if c.OnTokenRefresh != nil {
+		if err := c.OnTokenRefresh(c.AccessToken, c.RefreshToken, c.TokenExpiry); err != nil {
+			return fmt.Errorf("failed to persist refreshed broker token: %w", err)
+		}
+	}
 	return nil
 }
 

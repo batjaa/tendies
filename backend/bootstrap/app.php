@@ -5,7 +5,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -59,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->renderable(function (\App\Exceptions\SchwabAuthException $e, Request $request) {
             return response()->json([
                 'error' => 'schwab_token_expired',
-                'message' => 'Schwab session expired. Run `tendies auth login` to re-authenticate.',
+                'message' => 'Schwab session expired. Run `tendies account link` to re-authenticate.',
             ], 401);
         });
     })->create();
