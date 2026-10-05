@@ -125,7 +125,7 @@ tendies account list --direct --refresh-details   # force refresh cached names
 | Command | Description |
 |---|---|
 | `tendies` | Calculate and print realized P&L |
-| `tendies account link` | Connect or re-authorize Schwab (browser OAuth) |
+| `tendies account link` | Connect or re-authorize Schwab (browser OAuth, finishes automatically) |
 | `tendies account create` | Create a Tendies account |
 | `tendies account login` | Log in with email/password (`--direct` uses Schwab OAuth) |
 | `tendies account status` | Show account and subscription status |
@@ -260,6 +260,7 @@ Edit `~/.tendies/config.json` (override the default broker URL to point at your 
 
 1. Start the backend: `cd backend && php artisan serve`
 2. Log in: `tendies account link` — opens browser, completes OAuth, saves token to keychain
+   The CLI waits for that authorization attempt to finish automatically; no Enter is needed. Complete the browser flow within 10 minutes, or press Ctrl+C to cancel and retry.
 3. Fetch P&L: `tendies --day`
 
 For direct mode (no backend needed):

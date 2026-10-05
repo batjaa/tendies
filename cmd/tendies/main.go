@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
@@ -870,10 +871,13 @@ func runAuthenticatedLink(cfg *config.Config, bt *config.BrokerToken) error {
 	bc.RefreshToken = bt.RefreshToken
 	bc.TokenExpiry = bt.Expiry
 
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
 
 	fmt.Println("Requesting link session...")
-	authorizeURL, err := bc.InitiateLink(ctx, "schwab")
+	link, err := bc.InitiateLink(ctx, "schwab")
 	if err != nil {
 		var limErr *broker.AccountLimitError
 		if errors.As(err, &limErr) {
@@ -883,23 +887,21 @@ func runAuthenticatedLink(cfg *config.Config, bt *config.BrokerToken) error {
 	}
 
 	fmt.Println("Opening browser for Schwab authorization...")
-	fmt.Printf("If the browser doesn't open, visit:\n%s\n\n", authorizeURL)
-	broker.OpenBrowser(authorizeURL)
+	fmt.Printf("If the browser doesn't open, visit:\n%s\n\n", link.AuthorizeURL)
+	broker.OpenBrowser(link.AuthorizeURL)
 
-	fmt.Print("Press Enter after completing authorization in your browser...")
-	stdinReader.ReadString('\n')
-
-	// Verify by fetching accounts.
-	var accounts []schwab.AccountNumber
-	if err := runWithSpinner("Verifying linked accounts", func() error {
-		var loadErr error
-		accounts, loadErr = bc.GetAccountNumbers(ctx)
-		return loadErr
-	}); err != nil {
-		return fmt.Errorf("failed to verify accounts: %w", err)
+	fmt.Println("Waiting for authorization in your browser (Ctrl+C to cancel)...")
+	if err := bc.WaitForLink(ctx, link.ID); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return errors.New("link timed out after 10 minutes; run `tendies account link` to try again")
+		}
+		if errors.Is(err, context.Canceled) {
+			return errors.New("link canceled")
+		}
+		return fmt.Errorf("could not confirm account link: %w", err)
 	}
 
-	fmt.Printf("Account linked successfully. You have %d Schwab account(s).\n", len(accounts))
+	fmt.Println("Account linked successfully.")
 	return nil
 }
 

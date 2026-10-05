@@ -1,13 +1,12 @@
 <?php
 
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\LinkController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\SchwabCallbackController;
 use App\Http\Controllers\WaitlistRegistrationController;
 use App\Http\Controllers\WebAccountController;
 use App\Http\Controllers\WebAuthController;
-use App\Services\SchwabService;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,31 +21,9 @@ Route::get('/', function () {
 Route::get('/auth/schwab/callback', [SchwabCallbackController::class, 'callback'])
     ->name('schwab.callback');
 
-Route::get('/auth/link/{sessionId}', function (string $sessionId, SchwabService $schwab) {
-    $linkData = Cache::get("link_session:{$sessionId}");
-
-    if (! $linkData) {
-        abort(403, 'Invalid or expired link session');
-    }
-
-    // Store session ID for the callback to consume.
-    session(['link_session_id' => $sessionId]);
-
-    $state = bin2hex(random_bytes(16));
-
-    // Build a Passport-style authorize URL to redirect back to after Schwab callback.
-    $passportAuthorizeUrl = config('app.url') . '/auth/link/complete?' . http_build_query([
-        'link_session_id' => $sessionId,
-    ]);
-
-    Cache::put("schwab_state:{$state}", $passportAuthorizeUrl, now()->addMinutes(10));
-
-    return redirect($schwab->getAuthorizeUrl($state));
-})->name('auth.link');
-
-Route::get('/auth/link/complete', function () {
-    return response()->json(['status' => 'linked', 'message' => 'Account linked successfully.']);
-})->name('auth.link.complete');
+Route::get('/auth/link/complete', [LinkController::class, 'complete'])->name('auth.link.complete');
+Route::get('/auth/link/{sessionId}', [LinkController::class, 'authorize'])
+    ->whereUuid('sessionId')->name('auth.link');
 
 Route::get('/auth/waitlist/verify', function (\Illuminate\Http\Request $request) {
     $token = $request->query('token');

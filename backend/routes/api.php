@@ -33,6 +33,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/v1/subscription/checkout', [SubscriptionController::class, 'checkout']);
     Route::post('/v1/subscription/portal', [SubscriptionController::class, 'portal']);
     Route::post('/v1/link/initiate', [LinkController::class, 'initiate']);
+    Route::get('/v1/link/{sessionId}/status', [LinkController::class, 'status'])->whereUuid('sessionId');
     Route::post('/v1/account/upgrade', [AccountUpgradeController::class, 'upgrade']);
     Route::get('/v1/trading-accounts', [TradingAccountController::class, 'index']);
     Route::patch('/v1/trading-accounts/{tradingAccount}', [TradingAccountController::class, 'update']);

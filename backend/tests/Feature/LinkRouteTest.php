@@ -23,7 +23,7 @@ class LinkRouteTest extends TestCase
 
     public function test_valid_session_redirects_to_schwab(): void
     {
-        $sessionId = 'test-session-id';
+        $sessionId = '00000000-0000-4000-8000-000000000001';
         Cache::put("link_session:{$sessionId}", [
             'user_id' => 1,
             'provider' => 'schwab',
@@ -37,21 +37,21 @@ class LinkRouteTest extends TestCase
 
     public function test_expired_session_returns_403(): void
     {
-        $response = $this->get('/auth/link/nonexistent-session');
+        $response = $this->get('/auth/link/00000000-0000-4000-8000-000000000002');
 
         $response->assertStatus(403);
     }
 
-    public function test_stores_session_id_in_laravel_session(): void
+    public function test_binds_link_session_to_oauth_state(): void
     {
-        $sessionId = 'test-session-id';
+        $sessionId = '00000000-0000-4000-8000-000000000001';
         Cache::put("link_session:{$sessionId}", [
             'user_id' => 1,
             'provider' => 'schwab',
         ], now()->addMinutes(10));
 
-        $this->get("/auth/link/{$sessionId}");
-
-        $this->assertEquals($sessionId, session('link_session_id'));
+        $response = $this->get("/auth/link/{$sessionId}");
+        parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+        $this->assertEquals($sessionId, Cache::get("schwab_state:{$query['state']}")['link_session_id']);
     }
 }

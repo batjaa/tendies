@@ -21,7 +21,7 @@ class SchwabService
             'state' => $state,
         ]);
 
-        return config('schwab.authorize_url') . '?' . $params;
+        return config('schwab.authorize_url').'?'.$params;
     }
 
     /**
@@ -33,10 +33,12 @@ class SchwabService
         $sessionId = Str::uuid()->toString();
 
         Cache::put("link_session:{$sessionId}", ['user_id' => $user->id], now()->addMinutes(10));
-        session(['link_session_id' => $sessionId]);
 
         $state = bin2hex(random_bytes(16));
-        Cache::put("schwab_state:{$state}", $returnUrl, now()->addMinutes(10));
+        Cache::put("schwab_state:{$state}", [
+            'return_url' => $returnUrl,
+            'link_session_id' => $sessionId,
+        ], now()->addMinutes(10));
 
         return redirect($this->getAuthorizeUrl($state));
     }
@@ -52,8 +54,8 @@ class SchwabService
             ]);
 
         if (! $response->successful()) {
-            report('Schwab token exchange failed: ' . $response->body());
-            throw new \RuntimeException('Schwab token exchange failed (HTTP ' . $response->status() . ')');
+            report('Schwab token exchange failed: '.$response->body());
+            throw new \RuntimeException('Schwab token exchange failed (HTTP '.$response->status().')');
         }
 
         return $response->json();
@@ -69,8 +71,8 @@ class SchwabService
             ]);
 
         if (! $response->successful()) {
-            report('Schwab token refresh failed: ' . $response->body());
-            throw new SchwabAuthException('Schwab token refresh failed (HTTP ' . $response->status() . ')');
+            report('Schwab token refresh failed: '.$response->body());
+            throw new SchwabAuthException('Schwab token refresh failed (HTTP '.$response->status().')');
         }
 
         return $response->json();
@@ -133,7 +135,7 @@ class SchwabService
     public function makeRequest(TradingAccount $tradingAccount, string $method, string $path, array $query = []): array
     {
         $accessToken = $this->getValidAccessToken($tradingAccount);
-        $url = config('schwab.api_base_url') . $path;
+        $url = config('schwab.api_base_url').$path;
 
         $response = Http::withToken($accessToken)
             ->$method($url, $query);
@@ -153,7 +155,7 @@ class SchwabService
             report("Schwab API error {$response->status()}: {$response->body()}");
 
             if ($response->status() === 401) {
-                throw new SchwabAuthException("Schwab API request failed (HTTP 401)");
+                throw new SchwabAuthException('Schwab API request failed (HTTP 401)');
             }
 
             throw new \RuntimeException("Schwab API request failed (HTTP {$response->status()})");
@@ -168,12 +170,12 @@ class SchwabService
      */
     public function fetchAccountHashes(string $accessToken): array
     {
-        $url = config('schwab.api_base_url') . '/accounts/accountNumbers';
+        $url = config('schwab.api_base_url').'/accounts/accountNumbers';
 
         $response = Http::withToken($accessToken)->get($url);
 
         if (! $response->successful()) {
-            throw new \RuntimeException('Failed to fetch Schwab account numbers (HTTP ' . $response->status() . ')');
+            throw new \RuntimeException('Failed to fetch Schwab account numbers (HTTP '.$response->status().')');
         }
 
         $accounts = $response->json();

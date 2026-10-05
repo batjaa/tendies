@@ -453,20 +453,26 @@ func (c *Client) GetStatus(ctx context.Context) (*AccountStatus, error) {
 	return &status, nil
 }
 
-// InitiateLink starts a new account linking session and returns the authorize URL.
-func (c *Client) InitiateLink(ctx context.Context, provider string) (string, error) {
+// LinkSession identifies one authorization attempt, independent of existing accounts.
+type LinkSession struct {
+	ID           string `json:"link_session_id"`
+	AuthorizeURL string `json:"authorize_url"`
+}
+
+// InitiateLink starts a new account linking session and returns the attempt ID and authorize URL.
+func (c *Client) InitiateLink(ctx context.Context, provider string) (*LinkSession, error) {
 	if err := c.ensureValidToken(ctx); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	payload, err := json.Marshal(map[string]string{"provider": provider})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.BrokerURL+"/api/v1/link/initiate", bytes.NewReader(payload))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
 	req.Header.Set("Content-Type", "application/json")
@@ -474,19 +480,19 @@ func (c *Client) InitiateLink(ctx context.Context, provider string) (string, err
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
 		var errResp apiError
 		if json.Unmarshal(body, &errResp) == nil && errResp.Error == "account_limit_reached" {
-			return "", &AccountLimitError{Message: errResp.Message}
+			return nil, &AccountLimitError{Message: errResp.Message}
 		}
 	}
 
@@ -495,16 +501,53 @@ func (c *Client) InitiateLink(ctx context.Context, provider string) (string, err
 		if len(msg) > 200 {
 			msg = msg[:200] + "..."
 		}
-		return "", fmt.Errorf("link initiate failed (%d): %s", resp.StatusCode, msg)
+		return nil, fmt.Errorf("link initiate failed (%d): %s", resp.StatusCode, msg)
 	}
 
-	var result struct {
-		AuthorizeURL string `json:"authorize_url"`
-	}
+	var result LinkSession
 	if err := json.Unmarshal(body, &result); err != nil {
-		return "", fmt.Errorf("failed to decode link response: %w", err)
+		return nil, fmt.Errorf("failed to decode link response: %w", err)
 	}
-	return result.AuthorizeURL, nil
+	if result.ID == "" || result.AuthorizeURL == "" {
+		return nil, errors.New("incomplete link response")
+	}
+	return &result, nil
+}
+
+// WaitForLink waits until this attempt succeeds, fails, expires, or ctx is canceled.
+func (c *Client) WaitForLink(ctx context.Context, sessionID string) error {
+	return c.waitForLink(ctx, sessionID, 2*time.Second)
+}
+
+func (c *Client) waitForLink(ctx context.Context, sessionID string, interval time.Duration) error {
+	for {
+		body, err := c.doGet(ctx, "/api/v1/link/"+url.PathEscape(sessionID)+"/status", nil)
+		if err != nil {
+			return err
+		}
+		var result struct {
+			Status string `json:"status"`
+		}
+		if err := json.Unmarshal(body, &result); err != nil {
+			return fmt.Errorf("failed to decode link status: %w", err)
+		}
+		switch result.Status {
+		case "linked":
+			return nil
+		case "failed":
+			return errors.New("Schwab authorization did not complete; run `tendies account link` to try again")
+		case "pending":
+			timer := time.NewTimer(interval)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			case <-timer.C:
+			}
+		default:
+			return fmt.Errorf("unexpected link status %q", result.Status)
+		}
+	}
 }
 
 // AuthResponse is the response from register/login endpoints.
