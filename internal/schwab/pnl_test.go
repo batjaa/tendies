@@ -1,6 +1,8 @@
 package schwab
 
 import (
+	"context"
+	"errors"
 	"math"
 	"testing"
 	"time"
@@ -272,5 +274,46 @@ func TestParseTradesExtractsPrice(t *testing.T) {
 	}
 	if parsed[0].price != 380.00 {
 		t.Errorf("price=%f, want 380.00", parsed[0].price)
+	}
+}
+
+func TestFIFOClosesOldestLotsAcrossPartialSales(t *testing.T) {
+	for _, sign := range []float64{1, -1} {
+		trades := []parsedTrade{
+			{activityID: 1, symbol: "TEST", qty: 2, netAmount: -200 * sign, positionEffect: "OPENING"},
+			{activityID: 2, symbol: "TEST", qty: 2, netAmount: -400 * sign, positionEffect: "OPENING"},
+			{activityID: 3, symbol: "TEST", qty: 1, netAmount: 150 * sign, positionEffect: "CLOSING", inRange: true},
+			{activityID: 4, symbol: "TEST", qty: 2, netAmount: 300 * sign, positionEffect: "CLOSING", inRange: true},
+		}
+		summary, unmatched := summarizeMatchedTrades(trades)
+		if len(unmatched) != 0 || summary.TradeCount != 2 {
+			t.Fatalf("unexpected summary: %+v, unmatched: %v", summary, unmatched)
+		}
+		if summary.Trades[0].RealizedPnL != 50*sign || summary.Trades[1].RealizedPnL != 0 {
+			t.Fatalf("FIFO must consume first lot before second: %+v", summary.Trades)
+		}
+		if summary.Trades[0].MatchedOpenings[0].OpenActivityID != 1 || len(summary.Trades[1].MatchedOpenings) != 2 {
+			t.Fatalf("unexpected matched lots: %+v", summary.Trades)
+		}
+	}
+}
+
+type failingExpirationFetcher struct{ err error }
+
+func (f failingExpirationFetcher) GetAccountNumbers(context.Context) ([]AccountNumber, error) {
+	return nil, nil
+}
+func (f failingExpirationFetcher) GetTransactions(_ context.Context, _ string, _, _ time.Time, kind string) ([]Transaction, error) {
+	if kind == "RECEIVE_AND_DELIVER" {
+		return nil, f.err
+	}
+	return nil, nil
+}
+func TestCalculationRejectsMissingExpirationData(t *testing.T) {
+	from := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	upstream := errors.New("upstream unavailable")
+	summary, err := CalculateRealizedPnL(context.Background(), failingExpirationFetcher{upstream}, "test", from, from.AddDate(0, 0, 1))
+	if !errors.Is(err, upstream) || summary != nil {
+		t.Fatalf("must not report complete results: summary=%+v err=%v", summary, err)
 	}
 }

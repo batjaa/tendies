@@ -135,10 +135,10 @@ func CalculateRealizedPnL(ctx context.Context, ds TransactionFetcher, accountHas
 			return nil, err
 		}
 		expirations, err := ds.GetTransactions(ctx, accountHash, from, to, "RECEIVE_AND_DELIVER")
-		if err == nil {
-			trades = append(trades, expirations...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get expiration transactions: %w", err)
 		}
-		return trades, nil
+		return append(trades, expirations...), nil
 	}
 
 	var inRangeTrades []parsedTrade
@@ -271,42 +271,30 @@ func summarizeMatchedTrades(allTrades []parsedTrade) (*PnLSummary, map[string]fl
 		}
 
 		remaining := t.qty
-		closeCashPerUnit := t.netAmount / t.qty
 		var openCashTotal float64
 		var matchedOpenings []MatchedOpening
 		lots := inventory[key]
 
-		// Build list of available lot indices sorted by P&L impact.
-		type candidate struct {
-			idx   int
-			pnlPU float64
-		}
-		var candidates []candidate
-		for i, l := range lots {
-			if l.qtyRemain > matchEpsilon {
-				candidates = append(candidates, candidate{i, l.cashPerUnit + closeCashPerUnit})
+		// Lots were appended chronologically: consume the oldest available first.
+		for i := range lots {
+			if lots[i].qtyRemain <= matchEpsilon {
+				continue
 			}
-		}
-		sort.Slice(candidates, func(a, b int) bool {
-			return candidates[a].pnlPU < candidates[b].pnlPU // most loss first
-		})
-
-		for _, c := range candidates {
 			if remaining <= matchEpsilon {
 				break
 			}
-			matched := math.Min(remaining, lots[c.idx].qtyRemain)
-			openCashTotal += lots[c.idx].cashPerUnit * matched
+			matched := math.Min(remaining, lots[i].qtyRemain)
+			openCashTotal += lots[i].cashPerUnit * matched
 			matchedOpenings = append(matchedOpenings, MatchedOpening{
-				OpenActivityID:  lots[c.idx].openActivityID,
-				OpenTime:        lots[c.idx].openTime,
+				OpenActivityID:  lots[i].openActivityID,
+				OpenTime:        lots[i].openTime,
 				Quantity:        matched,
-				OpenCash:        lots[c.idx].cashPerUnit * matched,
-				OpenCashPerUnit: lots[c.idx].cashPerUnit,
-				OpenPrice:       lots[c.idx].price,
-				OpenInstruction: lots[c.idx].openInstruction,
+				OpenCash:        lots[i].cashPerUnit * matched,
+				OpenCashPerUnit: lots[i].cashPerUnit,
+				OpenPrice:       lots[i].price,
+				OpenInstruction: lots[i].openInstruction,
 			})
-			lots[c.idx].qtyRemain -= matched
+			lots[i].qtyRemain -= matched
 			remaining -= matched
 		}
 		inventory[key] = lots
