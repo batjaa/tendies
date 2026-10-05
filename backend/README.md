@@ -64,10 +64,13 @@ Playwright uses `.env.e2e` (SQLite) and starts a local server on port 8899 autom
 
 ## Deployment
 
-Deployed via Laravel Forge. Push to `staging` or `main` branch triggers auto-deploy.
+Production runs on Coolify using the repository's Docker Compose stack and the
+`main` branch. The app, queue worker, and Nightwatch use the same source revision.
+See [Production on Coolify](../README.md#production-on-coolify) for configuration.
 
-- **Staging:** `staging.mytendies.app`
-- **Production:** `mytendies.app`
+- **Production:** `https://mytendies.app`
+- Verify the Coolify deployment has finished and `/up` and `/api/health` succeed
+  after pushing. The legacy Forge checkout is not the current production target.
 
 ## Existing accounts and waitlist registration
 
