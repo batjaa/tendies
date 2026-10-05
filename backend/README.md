@@ -68,3 +68,11 @@ Deployed via Laravel Forge. Push to `staging` or `main` branch triggers auto-dep
 
 - **Staging:** `staging.mytendies.app`
 - **Production:** `mytendies.app`
+
+## Existing accounts and waitlist registration
+
+Waitlist registration never deletes an existing account to reuse its email address.
+Users with an existing email should log in or use password reset, including legacy
+waitlist users. Having no Passport tokens does not mean a user is abandoned: web-only
+users may never create API tokens. Brokerage linking only permits claiming anonymous
+users; registered accounts retain ownership.

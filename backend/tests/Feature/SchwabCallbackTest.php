@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\TradingAccount;
-use App\Models\TradingAccountHash;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -32,7 +31,7 @@ class SchwabCallbackTest extends TestCase
         ]);
 
         $this->validState = bin2hex(random_bytes(16));
-        $this->passportAuthorizeUrl = config('app.url') . '/oauth/authorize?client_id=1&state=passport-state-123';
+        $this->passportAuthorizeUrl = config('app.url').'/oauth/authorize?client_id=1&state=passport-state-123';
 
         Cache::put("schwab_state:{$this->validState}", $this->passportAuthorizeUrl, now()->addMinutes(10));
     }
@@ -114,12 +113,12 @@ class SchwabCallbackTest extends TestCase
 
     // --- Claiming accounts from duplicate users ---
 
-    public function test_authenticated_user_claims_account_from_never_logged_in_user(): void
+    public function test_authenticated_user_claims_anonymous_account(): void
     {
         $this->fakeSuccessfulSchwabApi();
 
-        // Old waitlist flow created a user with a random password (no Passport tokens).
-        $oldUser = User::factory()->create(['email' => 'old@example.com']);
+        // An anonymous brokerage connection can be claimed by a registered user.
+        $oldUser = User::factory()->anonymous()->create();
         $account = TradingAccount::factory()->create(['user_id' => $oldUser->id]);
         $account->hashes()->create(['hash_value' => 'hash-a']);
 
@@ -139,6 +138,23 @@ class SchwabCallbackTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $oldUser->id]);
         $this->assertDatabaseHas('trading_accounts', ['user_id' => $newUser->id]);
         $this->assertDatabaseCount('trading_accounts', 1);
+    }
+
+    public function test_cannot_claim_registered_web_user_without_passport_tokens(): void
+    {
+        $this->fakeSuccessfulSchwabApi();
+        $owner = User::factory()->create();
+        $account = TradingAccount::factory()->create(['user_id' => $owner->id]);
+        $account->hashes()->create(['hash_value' => 'hash-a']);
+        $other = User::factory()->onTrial()->create();
+        Cache::put('link_session:claim-test', ['user_id' => $other->id], now()->addMinutes(10));
+
+        $this->withSession(['link_session_id' => 'claim-test'])
+            ->get("/auth/schwab/callback?state={$this->validState}&code=auth-code")
+            ->assertStatus(409);
+
+        $this->assertDatabaseHas('users', ['id' => $owner->id]);
+        $this->assertDatabaseHas('trading_accounts', ['id' => $account->id, 'user_id' => $owner->id]);
     }
 
     // --- Returning user (same hashes) ---

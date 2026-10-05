@@ -88,9 +88,9 @@ class WaitlistRegistrationTest extends TestCase
         $this->assertDatabaseCount('users', 0);
     }
 
-    public function test_post_replaces_orphaned_user_with_same_email(): void
+    public function test_post_preserves_web_user_without_passport_tokens(): void
     {
-        // Orphaned user (no Passport tokens) — should be replaced.
+        // Web-only users have no Passport tokens but still own their accounts.
         $orphan = User::factory()->create(['email' => 'taken@example.com']);
         $entry = WaitlistEntry::factory()->invited()->create(['email' => 'taken@example.com']);
 
@@ -102,9 +102,24 @@ class WaitlistRegistrationTest extends TestCase
                 'waitlist_invite_token' => $entry->invite_token,
             ]);
 
-        $response->assertRedirect('/onboarding/connect');
-        $this->assertDatabaseMissing('users', ['id' => $orphan->id]);
+        $response->assertSessionHasErrors('email');
+        $this->assertDatabaseHas('users', ['id' => $orphan->id]);
         $this->assertDatabaseHas('users', ['email' => 'taken@example.com']);
+    }
+
+    public function test_invalid_invite_cannot_delete_existing_user(): void
+    {
+        $user = User::factory()->create();
+        $account = \App\Models\TradingAccount::factory()->create(['user_id' => $user->id]);
+
+        $this->post('/auth/waitlist/register', [
+            'email' => $user->email,
+            'password' => 'password123',
+            'waitlist_invite_token' => 'invalid-token',
+        ])->assertSessionHasErrors('email');
+
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+        $this->assertDatabaseHas('trading_accounts', ['id' => $account->id]);
     }
 
     public function test_post_with_active_user_email_fails_validation(): void

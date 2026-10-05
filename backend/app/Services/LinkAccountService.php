@@ -25,8 +25,7 @@ class LinkAccountService
      *     │  → refresh tokens  │  → create under session's user
      *     │                    │
      *     ├─ claimable?        └─ neither?
-     *     │  (anon or never      → create anonymous User + TradingAccount
-     *     │   logged in) → claim
+     *     │  anonymous → claim  → create anonymous User + TradingAccount
      *     │  (FOR UPDATE lock)
      *     │
      *     └─ other registered?
@@ -68,9 +67,7 @@ class LinkAccountService
             return ['user' => $existingUser, 'trading_account' => $tradingAccount, 'is_new_user' => false, 'is_new_account' => false];
         }
 
-        // Claimable if the existing owner never authenticated themselves:
-        // anonymous (no email) or has no Passport tokens (auto-created by old
-        // waitlist flow with a random password, never logged in from CLI/app).
+        // Only anonymous accounts can be claimed. Web users may have no API tokens.
         if ($this->isClaimable($existingUser)) {
             return DB::transaction(function () use ($tradingAccount, $existingUser, $tokenData, $authenticatedUser) {
                 $lockedUser = User::lockForUpdate()->find($existingUser->id);
@@ -130,12 +127,11 @@ class LinkAccountService
     }
 
     /**
-     * A user is claimable if they never authenticated themselves:
-     * anonymous (no email) or auto-created with no Passport tokens.
+     * A registered user owns their account even without Passport tokens.
      */
     private function isClaimable(User $user): bool
     {
-        return $user->isAnonymous() || $user->tokens()->count() === 0;
+        return $user->isAnonymous();
     }
 
     private function createTradingAccount(User $user, array $hashes, array $tokenData): TradingAccount
